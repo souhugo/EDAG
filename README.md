@@ -31,10 +31,10 @@ O relógio não depende da hora do computador: ao abrir a página, ela consulta 
 
 ## Saídas para o banheiro
 
-Antes de iniciar, escolha no quadro do relógio a opção de janelas da sala. O botão **Iniciar prova** só é liberado depois da escolha.
+Antes de iniciar, escolha no quadro do relógio a opção de janelas da sala. As janelas aparecem num quadro próprio, abaixo do relógio. O botão **Iniciar prova** só é liberado depois da escolha.
 
 - **Opção 1:** Janela 1 das 15h30 às 16h e Janela 2 das 16h30 às 17h.
 - **Opção 2:** Janela 1 das 16h às 16h30 e Janela 2 das 17h às 17h30.
 - **Sem saída:** para salas só com provas do Tipo I. Não são permitidas saídas antes da conclusão do exame.
 
-Os horários são fixos, não mudam se a prova começar atrasada. Abaixo do relógio aparece quanto falta para cada janela; a janela liberada fica verde e as encerradas ficam cinza. Para trocar a opção depois de iniciar, saia da tela cheia (Esc) e use **Trocar janelas**. Os horários ficam na constante `OPCOES_JANELAS` do `index.html`.
+Os horários são fixos, não mudam se a prova começar atrasada. O quadro mostra quanto falta para cada janela; a janela liberada fica verde e as encerradas ficam cinza. Para trocar a opção depois de iniciar, saia da tela cheia (Esc) e use **Trocar janelas**. Os horários ficam na constante `OPCOES_JANELAS` do `index.html`.

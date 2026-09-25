@@ -423,11 +423,19 @@
         transform: none;
       }
       
+      .left-section {
+        gap: 20px;
+      }
+      
       .bathroom-section {
         width: 100%;
-        margin-top: 18px;
-        padding-top: 16px;
-        border-top: 1px solid #e0e0e0;
+        max-width: 420px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        padding: 18px 22px;
+        box-sizing: border-box;
       }
       
       .bathroom-header {
@@ -658,6 +666,10 @@
           font-size: 13px;
         }
         
+        .bathroom-section {
+          max-width: 100%;
+        }
+        
         .janela-row {
           flex-wrap: wrap;
           font-size: 16px;
@@ -766,7 +778,7 @@
         }
         
         body.tela-cheia .time-display {
-          font-size: min(9vh, 5vw);
+          font-size: min(10vh, 5.5vw);
           padding: 1.5vh 1vw;
           margin-bottom: 1.5vh;
           box-sizing: border-box;
@@ -786,9 +798,13 @@
           display: none;
         }
         
+        body.tela-cheia .left-section {
+          gap: 2vh;
+        }
+        
         body.tela-cheia .bathroom-section {
-          margin-top: 1.5vh;
-          padding-top: 1.5vh;
+          max-width: none;
+          padding: 1.8vh 1.6vw;
         }
         
         body.tela-cheia .bathroom-header {
@@ -887,15 +903,6 @@
             <div class="time-display" id="timeDisplay">00:00:00</div>
             <div class="timezone-info" id="syncInfo">Sincronizando com a hora oficial...</div>
             
-            <!-- Janelas de saída para o banheiro -->
-            <div class="bathroom-section hidden" id="bathroomCard">
-              <div class="bathroom-header">
-                <i class="fas fa-restroom bathroom-icon"></i>
-                <h2 class="bathroom-title">Saída para o banheiro</h2>
-              </div>
-              <div id="bathroomBody"></div>
-            </div>
-            
             <div class="start-area">
               <div class="janela-picker" id="janelaPicker">
                 <div class="janela-picker-title">Janelas de banheiro desta sala</div>
@@ -922,6 +929,15 @@
                 </form>
               </div>
             </div>
+          </div>
+          
+          <!-- Janelas de saída para o banheiro -->
+          <div class="bathroom-section hidden" id="bathroomCard">
+            <div class="bathroom-header">
+              <i class="fas fa-restroom bathroom-icon"></i>
+              <h2 class="bathroom-title">Saída para o banheiro</h2>
+            </div>
+            <div id="bathroomBody"></div>
           </div>
         </div>
         
