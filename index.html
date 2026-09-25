@@ -1126,6 +1126,12 @@
         return minutos < 60 ? `${minutos} min` : formatarDuracao(minutos);
       }
       
+      // "falta 1 min", "falta 1h", "falta 1h29" (concorda com "uma hora"), "faltam 45 min", "faltam 2h"
+      function textoFalta(minutos) {
+        const singular = minutos === 1 || (minutos >= 60 && minutos < 120);
+        return `${singular ? 'falta' : 'faltam'} ${textoTempo(minutos)}`;
+      }
+      
       function renderizarJanelas(agoraMs) {
         const card = document.getElementById('bathroomCard');
         card.classList.toggle('hidden', !opcaoJanelas);
@@ -1147,7 +1153,7 @@
             status = 'encerrada';
           } else if (agoraMs >= ini.getTime()) {
             classe = 'aberta';
-            status = `liberada · faltam ${textoTempo(Math.ceil((fim.getTime() - agoraMs) / 60000))}`;
+            status = `liberada · ${textoFalta(Math.ceil((fim.getTime() - agoraMs) / 60000))}`;
           } else {
             status = `em ${textoTempo(Math.ceil((ini.getTime() - agoraMs) / 60000))}`;
           }
@@ -1189,12 +1195,11 @@
             classes.push('row-done');
           } else {
             const faltam = Math.ceil((fim.getTime() - agoraMs) / 60000);
-            const texto = faltam < 60 ? `${faltam} min` : formatarDuracao(faltam);
             // Nos últimos 15 minutos o aviso fica laranja
             const aviso = faltam <= MINUTOS_AVISO;
             if (aviso) classes.push('row-warning');
             if (prova.duracao === proxima.duracao) classes.push('row-next');
-            status = `<span class="status ${aviso ? 'status-warning' : 'status-running'}">faltam ${texto}</span>`;
+            status = `<span class="status ${aviso ? 'status-warning' : 'status-running'}">${textoFalta(faltam)}</span>`;
           }
           return `<tr class="${classes.join(' ')}">
                   <td>${prova.tipo}</td>
