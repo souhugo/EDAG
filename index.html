@@ -447,6 +447,178 @@
           text-align: center;
         }
       }
+
+      /* Tela cheia: tudo cabe na tela, sem rolagem, em telas deitadas (projetor, monitor, notebook) */
+      @media (min-aspect-ratio: 1/1) {
+        body.tela-cheia {
+          overflow: hidden;
+        }
+        
+        body.tela-cheia .slide-container {
+          max-width: none;
+          width: 100vw;
+          height: 100vh;
+          min-height: 0;
+          padding: 2.5vh 3vw;
+          box-sizing: border-box;
+          box-shadow: none;
+        }
+        
+        body.tela-cheia .header {
+          flex-direction: row;
+          margin-bottom: 1.5vh;
+        }
+        
+        body.tela-cheia .logo-edag {
+          max-width: none;
+          height: 7vh;
+          width: auto;
+          margin: 0;
+        }
+        
+        body.tela-cheia .header > div:last-child {
+          width: 7vh !important;
+        }
+        
+        body.tela-cheia .title {
+          font-size: min(6vh, 4vw);
+        }
+        
+        body.tela-cheia .title::after {
+          bottom: -1vh;
+          height: 0.5vh;
+        }
+        
+        body.tela-cheia .subtitle {
+          font-size: min(4vh, 2.6vw);
+          font-weight: 700;
+          margin-top: 1.5vh;
+        }
+        
+        body.tela-cheia .content {
+          flex-direction: row;
+          flex: 1;
+          min-height: 0;
+          margin: 1vh 0;
+          gap: 3vw;
+          align-items: center;
+        }
+        
+        body.tela-cheia .left-section {
+          flex: 1;
+          min-height: 0;
+          max-height: 100%;
+        }
+        
+        body.tela-cheia .right-section {
+          flex: 1.3;
+          min-height: 0;
+          max-height: 100%;
+        }
+        
+        body.tela-cheia .clock-container,
+        body.tela-cheia .table-container {
+          max-width: none;
+          margin: 0;
+          transform: none;
+        }
+        
+        body.tela-cheia .clock-container {
+          padding: 2.5vh 2vw;
+        }
+        
+        body.tela-cheia .clock-header {
+          margin-bottom: 1vh;
+        }
+        
+        body.tela-cheia .clock-icon,
+        body.tela-cheia .clock-title {
+          font-size: min(3vh, 1.8vw);
+        }
+        
+        body.tela-cheia .clock-subtitle {
+          display: none;
+        }
+        
+        body.tela-cheia .date-display {
+          font-size: min(2.6vh, 1.6vw);
+          padding: 1vh 1vw;
+          margin-bottom: 1.5vh;
+          box-sizing: border-box;
+        }
+        
+        body.tela-cheia .time-display {
+          font-size: min(12vh, 6.5vw);
+          padding: 1.5vh 1vw;
+          margin-bottom: 1.5vh;
+          box-sizing: border-box;
+        }
+        
+        body.tela-cheia .timezone-info {
+          font-size: min(1.8vh, 1.1vw);
+        }
+        
+        body.tela-cheia .start-area {
+          margin-top: 1.5vh;
+          padding-top: 1.5vh;
+        }
+        
+        body.tela-cheia .start-info {
+          font-size: min(3.2vh, 2vw);
+          margin-bottom: 0;
+        }
+        
+        /* Os botões de ajuste ficam fora da tela cheia (tecla Esc para sair) */
+        body.tela-cheia .start-actions,
+        body.tela-cheia .adjust-form {
+          display: none !important;
+        }
+        
+        body.tela-cheia .table-header {
+          padding: 1.4vh 1.5vw;
+        }
+        
+        body.tela-cheia .table-icon,
+        body.tela-cheia .table-title {
+          font-size: min(3vh, 1.8vw);
+        }
+        
+        body.tela-cheia table {
+          font-size: min(3vh, 1.9vw);
+        }
+        
+        body.tela-cheia th,
+        body.tela-cheia td {
+          padding: 1.2vh 1vw;
+          line-height: 1.2;
+        }
+        
+        body.tela-cheia .status {
+          display: inline;
+          font-size: 0.75em;
+          margin: 0 0 0 0.6em;
+        }
+        
+        body.tela-cheia .footer {
+          flex-direction: row;
+          margin-top: 1vh;
+        }
+        
+        body.tela-cheia .logo-senai-box {
+          padding: 1vh 1vw;
+          margin: 0;
+        }
+        
+        body.tela-cheia .logo-senai {
+          max-width: none;
+          height: 6vh;
+          width: auto;
+        }
+        
+        body.tela-cheia .copyright {
+          font-size: min(1.8vh, 1.1vw);
+        }
+      }
     </style>
   </head>
   <body>
@@ -480,6 +652,7 @@
               <div id="startedPanel" class="hidden">
                 <div class="start-info">Prova iniciada às <strong id="startLabel"></strong></div>
                 <div class="start-actions">
+                  <button type="button" class="btn-small" id="btnFullscreen">Tela cheia</button>
                   <button type="button" class="btn-small" id="btnAdjust">Ajustar horário</button>
                   <button type="button" class="btn-small" id="btnReset">Reiniciar</button>
                 </div>
@@ -685,6 +858,12 @@
         renderizarTabela();
       }
       
+      function entrarTelaCheia() {
+        const pagina = document.documentElement;
+        if (document.fullscreenElement || !pagina.requestFullscreen) return;
+        pagina.requestFullscreen().catch(function() {});
+      }
+      
       // Função para atualizar o relógio com horário de Brasília
       function updateClock() {
         const now = agora();
@@ -728,6 +907,13 @@
           // Considera o minuto cheio em que a prova começou
           const p = partesBrasilia(agora());
           salvarInicio(dataHojeBrasilia(Number(p.hour), Number(p.minute)));
+          entrarTelaCheia();
+        });
+        
+        document.getElementById('btnFullscreen').addEventListener('click', entrarTelaCheia);
+        
+        document.addEventListener('fullscreenchange', function() {
+          document.body.classList.toggle('tela-cheia', Boolean(document.fullscreenElement));
         });
         
         document.getElementById('btnReset').addEventListener('click', function() {

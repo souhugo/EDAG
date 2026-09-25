@@ -20,6 +20,8 @@ Antes do início, a tabela mostra os horários previstos para começar às 14h. 
 - **Ajustar horário** corrige o início, caso o botão tenha sido clicado atrasado.
 - **Reiniciar** apaga o início da sala.
 
+Ao clicar em **Iniciar prova**, a página entra em tela cheia com tudo ajustado ao tamanho da tela, sem cortes nem rolagem. Os botões de ajuste ficam ocultos na tela cheia: aperte **Esc** para sair e **Tela cheia** para voltar.
+
 O horário fica salvo no navegador de cada computador, então cada sala funciona de forma independente e o início não se perde se a página for recarregada.
 
 ## Hora oficial
