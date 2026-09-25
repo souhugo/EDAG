@@ -41,6 +41,51 @@ const SALAS = [
   'SESI-101', 'SESI-102', 'SESI-103', 'SESI-104', 'SESI-105', 'SESI-106', 'SESI-107', 'SESI-108', 'SESI-109', 'SESI-110', 'SESI-111', 'SESI-112'
 ];
 
+// Lista padrão, usada enquanto ninguém editar a lista pelo painel
+const SALAS_PADRAO = SALAS.slice();
+const STORAGE_LISTA_SALAS = 'edag-lista-salas';
+
+// Troca o conteúdo de SALAS e diz se mudou
+function aplicarListaSalas(lista) {
+  const antes = JSON.stringify(SALAS);
+  SALAS.splice(0, SALAS.length, ...lista);
+  return antes !== JSON.stringify(SALAS);
+}
+
+// Última lista recebida do servidor, para abrir certo mesmo sem internet
+try {
+  const guardada = JSON.parse(localStorage.getItem(STORAGE_LISTA_SALAS));
+  if (Array.isArray(guardada)) aplicarListaSalas(guardada);
+} catch (e) {}
+
+// Busca a lista editada pelo painel. Retorna true se a lista mudou.
+async function carregarListaSalas() {
+  try {
+    const resposta = await fetch('/api/lista-salas', { cache: 'no-store' });
+    if (!resposta.ok) return false;
+    const dados = await resposta.json();
+    try {
+      if (Array.isArray(dados.salas)) {
+        localStorage.setItem(STORAGE_LISTA_SALAS, JSON.stringify(dados.salas));
+      } else {
+        localStorage.removeItem(STORAGE_LISTA_SALAS);
+      }
+    } catch (e) {}
+    return aplicarListaSalas(Array.isArray(dados.salas) ? dados.salas : SALAS_PADRAO);
+  } catch (e) {
+    return false;
+  }
+}
+
+// Prédio de uma sala: "CIM4-1-01" fica em "CIM4"
+function predioDaSala(nome) {
+  return nome.split('-')[0];
+}
+
+function escaparHtml(texto) {
+  return String(texto).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const NOMES_OPCOES = {
   opcao1: 'Opção 1',
   opcao2: 'Opção 2',

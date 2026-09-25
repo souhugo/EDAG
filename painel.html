@@ -147,6 +147,132 @@
         background: #0B6B66;
         color: #ffffff;
       }
+      
+      .filtro.gerenciar-botao {
+        margin-left: 12px;
+        border-color: #0B6B66;
+      }
+      
+      /* Gerenciar salas */
+      .gerenciar {
+        background: rgba(255, 255, 255, 0.97);
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 16px 20px;
+        margin-bottom: 18px;
+      }
+      
+      .gerenciar-topo {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      
+      .gerenciar-topo strong {
+        font-size: 18px;
+      }
+      
+      .gerenciar-topo span {
+        font-size: 13px;
+        color: #666;
+      }
+      
+      .gerenciar-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      
+      .gerenciar-form input {
+        font-size: 16px;
+        padding: 8px 12px;
+        border: 2px solid #d0d0d0;
+        border-radius: 10px;
+      }
+      
+      .gerenciar-form input:focus {
+        outline: none;
+        border-color: #20B2AA;
+      }
+      
+      #novaSala {
+        flex: 1;
+        min-width: 200px;
+      }
+      
+      #gerenciarCodigo {
+        width: 170px;
+      }
+      
+      .gerenciar-form button {
+        background: #20B2AA;
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 700;
+        border: none;
+        border-radius: 10px;
+        padding: 8px 18px;
+        cursor: pointer;
+      }
+      
+      .predio {
+        margin-top: 10px;
+      }
+      
+      .predio-nome {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0B6B66;
+        margin-bottom: 6px;
+      }
+      
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #eef6f5;
+        border-radius: 999px;
+        padding: 4px 6px 4px 12px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      
+      .chip button {
+        border: none;
+        background: #d5e8e6;
+        color: #333;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+      }
+      
+      .chip button:hover {
+        background: #c0392b;
+        color: #ffffff;
+      }
+      
+      .gerenciar-msg {
+        margin-top: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #0B6B66;
+      }
+      
+      .gerenciar-msg.erro {
+        color: #a93226;
+      }
 
       .sala {
         background: rgba(255, 255, 255, 0.96);
@@ -356,6 +482,20 @@
         <div class="filtros" role="group" aria-label="Filtrar salas">
           <button type="button" class="filtro ativo" data-filtro="todas">Todas as salas</button>
           <button type="button" class="filtro" data-filtro="atencao">Precisam de atenção</button>
+          <button type="button" class="filtro gerenciar-botao" id="btnGerenciar" aria-expanded="false">Gerenciar salas</button>
+        </div>
+        <div class="gerenciar hidden" id="gerenciar">
+          <div class="gerenciar-topo">
+            <strong>Gerenciar salas</strong>
+            <span id="gerenciarTotal"></span>
+          </div>
+          <form class="gerenciar-form" id="novaSalaForm">
+            <input type="text" id="novaSala" maxlength="20" placeholder="Nova sala (ex.: CIM2-3-10)" autocomplete="off" required>
+            <input type="password" id="gerenciarCodigo" placeholder="Código do painel" autocomplete="off" aria-label="Código do painel">
+            <button type="submit">Adicionar</button>
+          </form>
+          <div id="listaGerenciar"></div>
+          <div class="gerenciar-msg hidden" id="gerenciarMsg"></div>
         </div>
         <div class="grid" id="grid"></div>
       </div>
@@ -397,6 +537,7 @@
       }
 
       async function carregar() {
+        if (await carregarListaSalas()) renderizarGerenciar();
         try {
           const resposta = await fetch(`/api/salas?codigo=${encodeURIComponent(codigo)}`, { cache: 'no-store' });
           if (resposta.status === 401) {
@@ -423,6 +564,63 @@
         renderizar();
       }
 
+      function mensagemGerenciar(texto, erro) {
+        const msg = document.getElementById('gerenciarMsg');
+        msg.textContent = texto;
+        msg.classList.toggle('erro', Boolean(erro));
+        msg.classList.remove('hidden');
+      }
+      
+      function renderizarGerenciar() {
+        document.getElementById('gerenciarTotal').textContent = `${SALAS.length} salas · a ordem abaixo é a ordem do painel`;
+        const grupos = new Map();
+        SALAS.forEach(nome => {
+          const predio = predioDaSala(nome);
+          if (!grupos.has(predio)) grupos.set(predio, []);
+          grupos.get(predio).push(nome);
+        });
+        document.getElementById('listaGerenciar').innerHTML = [...grupos].map(([predio, nomes]) => `
+          <div class="predio">
+            <div class="predio-nome">${escaparHtml(predio)}</div>
+            <div class="chips">${nomes.map(nome => `<span class="chip">${escaparHtml(nome)}<button type="button" data-remover="${escaparHtml(nome)}" aria-label="Remover ${escaparHtml(nome)}" title="Remover">×</button></span>`).join('')}</div>
+          </div>`).join('') || '<div>Nenhuma sala na lista.</div>';
+      }
+      
+      // Grava a lista inteira no servidor (exige o código do painel)
+      async function salvarLista(nova, mensagemOk) {
+        const codigoDigitado = document.getElementById('gerenciarCodigo').value.trim() || codigo;
+        mensagemGerenciar('Salvando…');
+        try {
+          const resposta = await fetch('/api/lista-salas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigo: codigoDigitado, salas: nova })
+          });
+          const dados = await resposta.json().catch(() => ({}));
+          if (!resposta.ok) {
+            mensagemGerenciar(dados.erro || `Não foi possível salvar (erro ${resposta.status}).`, true);
+            return false;
+          }
+          aplicarListaSalas(dados.salas);
+          try {
+            localStorage.setItem(STORAGE_LISTA_SALAS, JSON.stringify(dados.salas));
+          } catch (e) {}
+          if (codigoDigitado && codigoDigitado !== codigo) {
+            codigo = codigoDigitado;
+            try {
+              localStorage.setItem(STORAGE_CODIGO, codigo);
+            } catch (e) {}
+          }
+          mensagemGerenciar(mensagemOk);
+          renderizarGerenciar();
+          renderizar();
+          return true;
+        } catch (e) {
+          mensagemGerenciar('Sem conexão com o servidor. Tente de novo.', true);
+          return false;
+        }
+      }
+      
       function mostrarCodigo(erro) {
         document.getElementById('conteudo').classList.add('hidden');
         document.getElementById('codigoForm').classList.remove('hidden');
@@ -592,6 +790,47 @@
             document.querySelectorAll('.filtro').forEach(b => b.classList.toggle('ativo', b === botao));
             renderizar();
           });
+        });
+        
+        document.getElementById('btnGerenciar').addEventListener('click', function() {
+          const painel = document.getElementById('gerenciar');
+          const abrir = painel.classList.contains('hidden');
+          painel.classList.toggle('hidden', !abrir);
+          this.classList.toggle('ativo', abrir);
+          this.setAttribute('aria-expanded', String(abrir));
+          if (abrir) {
+            document.getElementById('gerenciarCodigo').value = codigo;
+            renderizarGerenciar();
+          }
+        });
+        
+        document.getElementById('novaSalaForm').addEventListener('submit', async function(event) {
+          event.preventDefault();
+          const campo = document.getElementById('novaSala');
+          const nome = campo.value.trim().replace(/\s+/g, ' ');
+          if (!nome) return;
+          if (SALAS.some(existente => existente.toLowerCase() === nome.toLowerCase())) {
+            mensagemGerenciar(`A sala ${nome} já está na lista.`, true);
+            return;
+          }
+          // Entra logo depois da última sala do mesmo andar ("CIM2-3"), senão do mesmo
+          // prédio ("CIM2"); se o prédio é novo, no fim da lista
+          const nova = SALAS.slice();
+          const andar = nome.includes('-') ? nome.slice(0, nome.lastIndexOf('-')).toLowerCase() : null;
+          const predio = predioDaSala(nome).toLowerCase();
+          const ultimaPosicao = teste => nova.reduce((posicao, existente, i) => (teste(existente.toLowerCase()) ? i : posicao), -1);
+          let posicao = andar ? ultimaPosicao(existente => existente.startsWith(`${andar}-`)) : -1;
+          if (posicao === -1) posicao = ultimaPosicao(existente => predioDaSala(existente) === predio);
+          nova.splice(posicao === -1 ? nova.length : posicao + 1, 0, nome);
+          if (await salvarLista(nova, `Sala ${nome} adicionada.`)) campo.value = '';
+        });
+        
+        document.getElementById('listaGerenciar').addEventListener('click', function(event) {
+          const botao = event.target.closest('[data-remover]');
+          if (!botao) return;
+          const nome = botao.dataset.remover;
+          if (!confirm(`Remover a sala ${nome} da lista?`)) return;
+          salvarLista(SALAS.filter(existente => existente !== nome), `Sala ${nome} removida.`);
         });
         
         document.getElementById('codigoForm').addEventListener('submit', function(event) {

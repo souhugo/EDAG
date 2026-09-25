@@ -2,21 +2,10 @@
 // Os dados ficam no Upstash Redis conectado ao projeto na Vercel, numa chave
 // por dia que expira sozinha depois de 2 dias.
 
-const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const { redis, configurado, lerCorpo } = require('./_redis');
+
 const OPCOES = ['opcao1', 'opcao2', 'sem-saida'];
 const DOIS_DIAS = 2 * 24 * 60 * 60;
-
-async function redis(comando) {
-  const resposta = await fetch(REDIS_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${REDIS_TOKEN}` },
-    body: JSON.stringify(comando)
-  });
-  const dados = await resposta.json();
-  if (dados.error) throw new Error(dados.error);
-  return dados.result;
-}
 
 function chaveDoDia() {
   const dia = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
@@ -37,10 +26,10 @@ function lerStatus(corpo) {
 // sem revelar credenciais nem dados das salas
 async function diagnosticar() {
   const resultado = {
-    banco: REDIS_URL && REDIS_TOKEN ? 'configurado' : 'faltando variáveis KV_REST_API_URL / KV_REST_API_TOKEN',
+    banco: configurado ? 'configurado' : 'faltando variáveis KV_REST_API_URL / KV_REST_API_TOKEN',
     dia: chaveDoDia().split(':').pop()
   };
-  if (REDIS_URL && REDIS_TOKEN) {
+  if (configurado) {
     try {
       resultado.conexao = (await redis(['PING'])) === 'PONG' ? 'ok' : 'resposta inesperada';
       resultado.salasHoje = await redis(['HLEN', chaveDoDia()]);
@@ -56,21 +45,13 @@ module.exports = async function handler(req, res) {
   if (req.method === 'GET' && req.query && req.query.diagnostico) {
     return res.status(200).json(await diagnosticar());
   }
-  if (!REDIS_URL || !REDIS_TOKEN) {
+  if (!configurado) {
     return res.status(500).json({ erro: 'Banco de dados não configurado.' });
   }
 
   try {
     if (req.method === 'POST') {
-      let corpo = req.body;
-      if (typeof corpo === 'string') {
-        try {
-          corpo = JSON.parse(corpo);
-        } catch (e) {
-          corpo = null;
-        }
-      }
-      const status = lerStatus(corpo);
+      const status = lerStatus(lerCorpo(req));
       if (!status) return res.status(400).json({ erro: 'Dados inválidos.' });
       const chave = chaveDoDia();
       const { id, ...dados } = status;

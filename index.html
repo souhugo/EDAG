@@ -1154,25 +1154,30 @@
         temporizadorEnvio = setTimeout(enviarStatus, 800);
       }
       
-      // Com a lista SALAS preenchida, troca o campo de texto por uma lista suspensa
+      // Com a lista SALAS preenchida, troca o campo de texto por uma lista suspensa.
+      // Pode ser chamada de novo quando a lista muda no painel.
       function montarCampoSala(id) {
         const campo = document.getElementById(id);
         if (SALAS.length === 0) return;
+        const valor = campo.value || sala;
+        const nomes = SALAS.slice();
+        // A sala já escolhida continua na lista, mesmo se foi removida no painel
+        if (sala && !nomes.some(nome => nome.toLowerCase() === sala.toLowerCase())) nomes.push(sala);
         const lista = document.createElement('select');
         lista.id = campo.id;
         lista.required = campo.required;
         lista.setAttribute('aria-label', 'Sala');
-        // Agrupa por prédio: "CIM4-1-01" fica em "CIM4"
         const grupos = new Map();
-        SALAS.forEach(nome => {
-          const predio = nome.split('-')[0];
+        nomes.forEach(nome => {
+          const predio = predioDaSala(nome);
           if (!grupos.has(predio)) grupos.set(predio, []);
           grupos.get(predio).push(nome);
         });
         lista.innerHTML = '<option value="">Selecione</option>' +
-          [...grupos].map(([predio, nomes]) => `<optgroup label="${predio}">` +
-            nomes.map(nome => `<option value="${nome}">${rotuloSala(nome)}</option>`).join('') +
+          [...grupos].map(([predio, nomesDoPredio]) => `<optgroup label="${escaparHtml(predio)}">` +
+            nomesDoPredio.map(nome => `<option value="${escaparHtml(nome)}">${escaparHtml(rotuloSala(nome))}</option>`).join('') +
             '</optgroup>').join('');
+        lista.value = valor;
         campo.replaceWith(lista);
       }
       
@@ -1370,6 +1375,13 @@
         montarCampoSala('salaInput');
         montarCampoSala('adjustSala');
         renderizar();
+        // Lista de salas editada no painel
+        carregarListaSalas().then(function(mudou) {
+          if (!mudou) return;
+          montarCampoSala('salaInput');
+          montarCampoSala('adjustSala');
+          renderizar();
+        });
         enviarStatus();
         // Sinal de vida para o painel a cada minuto
         setInterval(enviarStatus, 60 * 1000);
@@ -1402,7 +1414,9 @@
           });
         });
         
-        document.getElementById('salaInput').addEventListener('input', function(event) {
+        // O campo da sala pode ser recriado quando a lista muda, por isso o evento fica no documento
+        document.addEventListener('input', function(event) {
+          if (event.target.id !== 'salaInput') return;
           salvarSala(event.target.value);
           renderizar();
         });

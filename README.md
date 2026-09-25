@@ -51,9 +51,17 @@ Os dados ficam no Upstash Redis conectado ao projeto na Vercel (variáveis `KV_R
 
 Para exigir um código de acesso no painel, crie na Vercel a variável de ambiente `PAINEL_CODIGO` com o código desejado e publique de novo.
 
+### Adicionar ou remover salas
+
+No painel, clique em **Gerenciar salas**. Digite a sala nova e o código do painel e clique em **Adicionar**: ela entra logo depois das salas do mesmo andar (ou do mesmo prédio). Para remover, clique no **×** ao lado da sala. A edição exige a variável `PAINEL_CODIGO` definida na Vercel.
+
+A lista editada fica no banco de dados e vale para todas as páginas; as salas já abertas recebem a lista nova ao recarregar. Enquanto ninguém editar pelo painel, vale a lista padrão `SALAS` do `comum.js`.
+
 ## Arquivos
 
 - `index.html`: página da sala.
 - `painel.html`: painel da coordenação.
 - `comum.js`: durações das provas, janelas de banheiro, lista de salas e funções de horário usadas pelas duas páginas.
 - `api/salas.js`: função da Vercel que grava e lê a situação das salas.
+- `api/lista-salas.js`: função da Vercel que guarda a lista de salas editada no painel.
+- `api/_redis.js`: acesso ao banco de dados, usado pelas duas funções.
