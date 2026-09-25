@@ -353,6 +353,68 @@
         background: #20B2AA;
       }
 
+      .alterar {
+        margin-left: 6px;
+        border: 1px solid #0B6B66;
+        background: #ffffff;
+        color: #0B6B66;
+        border-radius: 999px;
+        padding: 1px 9px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      
+      .alterar:hover {
+        background: #0B6B66;
+        color: #ffffff;
+      }
+      
+      .opcoes-sala {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+      
+      .opcoes-sala button {
+        border: 2px solid #d0d0d0;
+        background: #f5f7f7;
+        border-radius: 8px;
+        padding: 6px 4px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      
+      .opcoes-sala button.atual {
+        background: #0B6B66;
+        border-color: #0B6B66;
+        color: #ffffff;
+      }
+      
+      .opcoes-rodape {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: #666;
+      }
+      
+      .opcoes-rodape button {
+        border: none;
+        background: none;
+        color: #0B6B66;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 0;
+      }
+      
+      .pendente {
+        font-size: 12px;
+        color: #a04000;
+        font-weight: 600;
+      }
+      
       .janela-aberta {
         background: #1e8e3e;
         color: #fff;
@@ -517,6 +579,11 @@
       let ultimaAtualizacao = null;
       let falhou = false;
       let filtro = 'todas';
+      // Opções de banheiro definidas pela coordenação, por sala (nome em minúsculas)
+      let ajustes = {};
+      // Sala com o seletor de opção aberto, e erro da última tentativa
+      let editandoSala = null;
+      let erroAjuste = '';
       // Salas que a coordenação precisa verificar
       const ESTADOS_ATENCAO = ['atrasada', 'sem-sinal', 'nao-conectada'];
 
@@ -554,6 +621,7 @@
           }
           const dados = await resposta.json();
           salas = dados.salas || [];
+          ajustes = dados.ajustes || {};
           ultimaAtualizacao = agora();
           falhou = false;
           document.getElementById('codigoForm').classList.add('hidden');
@@ -621,6 +689,34 @@
         }
       }
       
+      // Troca a opção de banheiro de uma sala; a sala recebe no próximo sinal
+      async function definirOpcao(nome, opcao) {
+        erroAjuste = '';
+        try {
+          const resposta = await fetch('/api/salas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ acao: 'ajustar-opcao', codigo, sala: nome, opcao })
+          });
+          const dados = await resposta.json().catch(() => ({}));
+          if (!resposta.ok) {
+            erroAjuste = dados.erro || `Não foi possível alterar (erro ${resposta.status}).`;
+            renderizar();
+            return;
+          }
+          ajustes[nome.toLowerCase()] = dados.ajuste;
+          salas.forEach(registro => {
+            if (registro.sala.toLowerCase() === nome.toLowerCase()) registro.opcao = opcao;
+          });
+          editandoSala = null;
+          renderizar();
+          carregar();
+        } catch (e) {
+          erroAjuste = 'Sem conexão com o servidor. Tente de novo.';
+          renderizar();
+        }
+      }
+      
       function mostrarCodigo(erro) {
         document.getElementById('conteudo').classList.add('hidden');
         document.getElementById('codigoForm').classList.remove('hidden');
@@ -649,6 +745,9 @@
         const registro = item.registros.slice().sort((a, b) => b.visto - a.visto)[0];
         const previsto = dataHojeBrasilia(INICIO_PREVISTO.hora, INICIO_PREVISTO.minuto).getTime();
         const info = { nome: item.nome, computadores: item.registros.length, registro };
+        info.ajuste = ajustes[item.nome.toLowerCase()];
+        // A sala ainda não recebeu a opção definida pelo painel
+        info.pendente = Boolean(info.ajuste && (!registro || registro.visto < info.ajuste.em));
 
         if (!registro) {
           info.estado = 'nao-conectada';
@@ -699,7 +798,10 @@
       }
 
       function textoJanela(info) {
-        if (!info.opcao) return info.registro && info.registro.opcao ? NOMES_OPCOES[info.registro.opcao] : '—';
+        if (!info.opcao) {
+          if (info.registro && info.registro.opcao) return NOMES_OPCOES[info.registro.opcao];
+          return info.ajuste ? NOMES_OPCOES[info.ajuste.opcao] : '—';
+        }
         if (info.opcao === NOMES_OPCOES['sem-saida']) return 'Sem saída';
         if (info.proximaJanela) return `${info.opcao} · próxima ${formatarHora(info.proximaJanela.ini)}`;
         return `${info.opcao} · encerradas`;
@@ -717,10 +819,19 @@
             linhas.push(['Próxima a encerrar', `${info.proxima.tipo} às ${formatarHora(info.proxima.fim)}`]);
             linhas.push(['Tempo', textoFalta(info.proxima.faltam)]);
           }
-          linhas.push(['Banheiro', textoJanela(info)]);
         }
+        linhas.push(['Banheiro', `${textoJanela(info)}<button type="button" class="alterar" data-alterar="${escapar(info.nome)}">Alterar</button>`]);
 
         const extras = [];
+        if (editandoSala === info.nome) {
+          const atual = info.registro ? info.registro.opcao : info.ajuste && info.ajuste.opcao;
+          extras.push(`<div class="opcoes-sala">${Object.keys(OPCOES_JANELAS).map(opcao =>
+            `<button type="button" class="${opcao === atual ? 'atual' : ''}" data-definir="${opcao}" data-sala="${escapar(info.nome)}">${NOMES_OPCOES[opcao]}</button>`).join('')}</div>
+            <div class="opcoes-rodape"><span>${erroAjuste ? `<span class="aviso">${escapar(erroAjuste)}</span>` : 'A sala recebe em até 1 minuto.'}</span><button type="button" data-cancelar="1">Cancelar</button></div>`);
+        }
+        if (info.pendente) {
+          extras.push(`<div class="pendente">Alterada pelo painel para ${NOMES_OPCOES[info.ajuste.opcao]} às ${formatarHora(new Date(info.ajuste.em))} · aguardando a sala</div>`);
+        }
         if (info.janelaAberta) {
           extras.push(`<div class="janela-aberta">${info.janelaAberta.nome} liberada até ${formatarHora(info.janelaAberta.fim)}</div>`);
         }
@@ -790,6 +901,22 @@
             document.querySelectorAll('.filtro').forEach(b => b.classList.toggle('ativo', b === botao));
             renderizar();
           });
+        });
+        
+        document.getElementById('grid').addEventListener('click', function(event) {
+          const alterar = event.target.closest('[data-alterar]');
+          const definir = event.target.closest('[data-definir]');
+          if (alterar) {
+            editandoSala = editandoSala === alterar.dataset.alterar ? null : alterar.dataset.alterar;
+            erroAjuste = '';
+            renderizar();
+          } else if (definir) {
+            definirOpcao(definir.dataset.sala, definir.dataset.definir);
+          } else if (event.target.closest('[data-cancelar]')) {
+            editandoSala = null;
+            erroAjuste = '';
+            renderizar();
+          }
         });
         
         document.getElementById('btnGerenciar').addEventListener('click', function() {

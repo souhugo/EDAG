@@ -51,6 +51,10 @@ Os dados ficam no Upstash Redis conectado ao projeto na Vercel (variáveis `KV_R
 
 Para exigir um código de acesso no painel, crie na Vercel a variável de ambiente `PAINEL_CODIGO` com o código desejado e publique de novo.
 
+### Trocar as janelas de banheiro de uma sala
+
+Em cada sala do painel, clique em **Alterar** ao lado de "Banheiro" e escolha **Opção 1**, **Opção 2** ou **Sem saída**. A página da sala recebe a nova opção no próximo sinal (em até 1 minuto) e atualiza o quadro de banheiro sozinha; enquanto isso, o painel mostra "aguardando a sala". Também funciona para salas que ainda não abriram a página: a opção é aplicada quando o aplicador escolher a sala. Se o aplicador trocar depois na própria sala, vale a troca mais recente. Exige o código `PAINEL_CODIGO`.
+
 ### Adicionar ou remover salas
 
 No painel, clique em **Gerenciar salas**. Digite a sala nova e o código do painel e clique em **Adicionar**: ela entra logo depois das salas do mesmo andar (ou do mesmo prédio). Para remover, clique no **×** ao lado da sala. A edição exige a variável `PAINEL_CODIGO` definida na Vercel.

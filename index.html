@@ -1060,6 +1060,9 @@
       
       let inicio = carregarInicio();
       let opcaoJanelas = carregarOpcaoJanelas();
+      // Momento da escolha atual; a opção enviada pelo painel só vale se for mais nova
+      let opcaoJanelasEm = carregarMomentoOpcao();
+      let avisoCoordenacao = '';
       // Mostra o seletor de janelas depois de iniciar (botão "Trocar janelas")
       let trocandoJanelas = false;
       const STORAGE_SALA = 'edag-sala';
@@ -1092,11 +1095,20 @@
         return null;
       }
       
-      function salvarOpcaoJanelas(opcao) {
+      function carregarMomentoOpcao() {
+        try {
+          const salvo = JSON.parse(localStorage.getItem(STORAGE_JANELAS));
+          if (salvo && Number.isFinite(salvo.em)) return salvo.em;
+        } catch (e) {}
+        return 0;
+      }
+      
+      function salvarOpcaoJanelas(opcao, em = agora().getTime()) {
         opcaoJanelas = opcao;
+        opcaoJanelasEm = em;
         trocandoJanelas = false;
         try {
-          localStorage.setItem(STORAGE_JANELAS, JSON.stringify({ opcao, dia: partesBrasilia(agora()).day }));
+          localStorage.setItem(STORAGE_JANELAS, JSON.stringify({ opcao, em, dia: partesBrasilia(agora()).day }));
         } catch (e) {}
         enviarStatusEmBreve();
         renderizar();
@@ -1128,7 +1140,8 @@
               id: dispositivo,
               sala,
               inicio: inicio ? inicio.getTime() : null,
-              opcao: opcaoJanelas
+              opcao: opcaoJanelas,
+              opcaoEm: opcaoJanelasEm
             }),
             keepalive: true
           });
@@ -1140,7 +1153,16 @@
             } catch (e) {}
             throw new Error(detalhe);
           }
-          info.textContent = `Painel da coordenação: atualizado às ${formatarHora(agora())}.`;
+          // A coordenação trocou a opção de banheiro desta sala pelo painel
+          if (resposta.status === 200) {
+            const dados = await resposta.json().catch(() => ({}));
+            const ajuste = dados.ajuste;
+            if (ajuste && OPCOES_JANELAS[ajuste.opcao]) {
+              avisoCoordenacao = ` Janelas de banheiro trocadas pela coordenação para ${NOMES_OPCOES[ajuste.opcao]} às ${formatarHora(new Date(ajuste.em))}.`;
+              salvarOpcaoJanelas(ajuste.opcao, ajuste.em);
+            }
+          }
+          info.textContent = `Painel da coordenação: atualizado às ${formatarHora(agora())}.${avisoCoordenacao}`;
           info.classList.remove('erro');
         } catch (e) {
           info.textContent = `Painel da coordenação: não foi possível enviar (${e.message}).`;
