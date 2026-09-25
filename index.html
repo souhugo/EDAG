@@ -191,7 +191,7 @@
       }
       
       .time-display {
-        font-size: 52px;
+        font-size: 44px;
         font-weight: 700;
         color: #333;
         font-family: 'Roboto Mono', monospace;
@@ -365,6 +365,156 @@
         display: none !important;
       }
       
+      .janela-picker {
+        margin-bottom: 16px;
+      }
+      
+      .janela-picker-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+      }
+      
+      .janela-options {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      
+      .janela-option {
+        background: #f0f0f0;
+        color: #333;
+        border: 2px solid #d0d0d0;
+        border-radius: 10px;
+        padding: 8px 6px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        line-height: 1.2;
+      }
+      
+      .janela-option small {
+        display: block;
+        font-size: 11px;
+        font-weight: 400;
+      }
+      
+      .janela-option:hover {
+        border-color: #20B2AA;
+      }
+      
+      .janela-option.selected {
+        background: #0B6B66;
+        border-color: #0B6B66;
+        color: #ffffff;
+      }
+      
+      .janela-hint {
+        font-size: 13px;
+        color: #d35400;
+        margin-top: 8px;
+      }
+      
+      .btn-start:disabled {
+        background: #b5cfcd;
+        box-shadow: none;
+        cursor: not-allowed;
+        transform: none;
+      }
+      
+      .bathroom-section {
+        width: 100%;
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid #e0e0e0;
+      }
+      
+      .bathroom-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      
+      .bathroom-icon {
+        font-size: 22px;
+        color: #20B2AA;
+        margin-right: 10px;
+      }
+      
+      .bathroom-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+      }
+      
+      .janela-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: #f5f7f7;
+        font-size: 18px;
+      }
+      
+      .janela-row + .janela-row {
+        margin-top: 8px;
+      }
+      
+      .janela-nome {
+        font-weight: 700;
+        color: #333;
+        white-space: nowrap;
+      }
+      
+      .janela-horario {
+        font-weight: 500;
+        color: #333;
+        white-space: nowrap;
+      }
+      
+      .janela-status {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1a9a93;
+        white-space: nowrap;
+      }
+      
+      /* Janela liberada agora */
+      .janela-row.aberta {
+        background: #1e8e3e;
+      }
+      
+      .janela-row.aberta .janela-nome,
+      .janela-row.aberta .janela-horario,
+      .janela-row.aberta .janela-status {
+        color: #ffffff;
+      }
+      
+      .janela-row.encerrada .janela-nome,
+      .janela-row.encerrada .janela-horario {
+        color: #999;
+      }
+      
+      .janela-row.encerrada .janela-status {
+        color: #999;
+        font-weight: 500;
+      }
+      
+      .sem-saida {
+        padding: 12px 14px;
+        border-radius: 10px;
+        background: #fdecea;
+        color: #a93226;
+        font-size: 17px;
+        font-weight: 600;
+        line-height: 1.35;
+        text-align: center;
+      }
+      
       .status {
         font-size: 15px;
         font-weight: 500;
@@ -508,8 +658,9 @@
           font-size: 13px;
         }
         
-        .time-display {
-          font-size: 44px;
+        .janela-row {
+          flex-wrap: wrap;
+          font-size: 16px;
         }
       }
 
@@ -615,7 +766,7 @@
         }
         
         body.tela-cheia .time-display {
-          font-size: min(12vh, 6.5vw);
+          font-size: min(9vh, 5vw);
           padding: 1.5vh 1vw;
           margin-bottom: 1.5vh;
           box-sizing: border-box;
@@ -635,8 +786,41 @@
           display: none;
         }
         
+        body.tela-cheia .bathroom-section {
+          margin-top: 1.5vh;
+          padding-top: 1.5vh;
+        }
+        
+        body.tela-cheia .bathroom-header {
+          margin-bottom: 1.2vh;
+        }
+        
+        body.tela-cheia .bathroom-icon,
+        body.tela-cheia .bathroom-title {
+          font-size: min(3vh, 1.8vw);
+        }
+        
+        body.tela-cheia .janela-row {
+          padding: 1vh 1vw;
+          font-size: min(2.8vh, 1.7vw);
+        }
+        
+        body.tela-cheia .janela-row + .janela-row {
+          margin-top: 0.8vh;
+        }
+        
+        body.tela-cheia .janela-status {
+          font-size: 0.8em;
+        }
+        
+        body.tela-cheia .sem-saida {
+          padding: 1.2vh 1vw;
+          font-size: min(2.6vh, 1.6vw);
+        }
+        
         /* Os botões de ajuste ficam fora da tela cheia (tecla Esc para sair) */
         body.tela-cheia .start-actions,
+        body.tela-cheia .janela-picker,
         body.tela-cheia .adjust-form {
           display: none !important;
         }
@@ -703,14 +887,33 @@
             <div class="time-display" id="timeDisplay">00:00:00</div>
             <div class="timezone-info" id="syncInfo">Sincronizando com a hora oficial...</div>
             
+            <!-- Janelas de saída para o banheiro -->
+            <div class="bathroom-section hidden" id="bathroomCard">
+              <div class="bathroom-header">
+                <i class="fas fa-restroom bathroom-icon"></i>
+                <h2 class="bathroom-title">Saída para o banheiro</h2>
+              </div>
+              <div id="bathroomBody"></div>
+            </div>
+            
             <div class="start-area">
-              <button type="button" class="btn-start" id="btnStart">
+              <div class="janela-picker" id="janelaPicker">
+                <div class="janela-picker-title">Janelas de banheiro desta sala</div>
+                <div class="janela-options" role="radiogroup" aria-label="Janelas de banheiro">
+                  <button type="button" class="janela-option" data-opcao="opcao1" role="radio">Opção 1</button>
+                  <button type="button" class="janela-option" data-opcao="opcao2" role="radio">Opção 2</button>
+                  <button type="button" class="janela-option" data-opcao="sem-saida" role="radio">Sem saída<small>(só Tipo I)</small></button>
+                </div>
+                <div class="janela-hint" id="janelaHint">Escolha uma opção para iniciar a prova.</div>
+              </div>
+              <button type="button" class="btn-start" id="btnStart" disabled>
                 <i class="fas fa-play"></i>Iniciar prova
               </button>
               <div id="startedPanel" class="hidden">
                 <div class="start-actions">
                   <button type="button" class="btn-small" id="btnFullscreen">Tela cheia</button>
                   <button type="button" class="btn-small" id="btnAdjust">Ajustar horário</button>
+                  <button type="button" class="btn-small" id="btnJanelas">Trocar janelas</button>
                   <button type="button" class="btn-small" id="btnReset">Reiniciar</button>
                 </div>
                 <form class="adjust-form hidden" id="adjustForm">
@@ -815,7 +1018,24 @@
         renderizarTabela();
       }
       
+      // Janelas de saída para o banheiro (horários fixos)
+      const OPCOES_JANELAS = {
+        opcao1: [
+          { nome: 'Janela 1', inicio: '15:30', fim: '16:00' },
+          { nome: 'Janela 2', inicio: '16:30', fim: '17:00' }
+        ],
+        opcao2: [
+          { nome: 'Janela 1', inicio: '16:00', fim: '16:30' },
+          { nome: 'Janela 2', inicio: '17:00', fim: '17:30' }
+        ],
+        'sem-saida': []
+      };
+      const STORAGE_JANELAS = 'edag-janelas-sala';
+      
       let inicio = carregarInicio();
+      let opcaoJanelas = carregarOpcaoJanelas();
+      // Mostra o seletor de janelas depois de iniciar (botão "Trocar janelas")
+      let trocandoJanelas = false;
       
       // Retorna ano, mês, dia, hora e minuto de uma data no horário de Brasília
       function partesBrasilia(date) {
@@ -859,6 +1079,68 @@
           }
         } catch (e) {}
         return null;
+      }
+      
+      function carregarOpcaoJanelas() {
+        try {
+          const salvo = JSON.parse(localStorage.getItem(STORAGE_JANELAS));
+          // Só vale se foi escolhida hoje
+          if (salvo && OPCOES_JANELAS[salvo.opcao] && salvo.dia === partesBrasilia(agora()).day) {
+            return salvo.opcao;
+          }
+        } catch (e) {}
+        return null;
+      }
+      
+      function salvarOpcaoJanelas(opcao) {
+        opcaoJanelas = opcao;
+        trocandoJanelas = false;
+        try {
+          localStorage.setItem(STORAGE_JANELAS, JSON.stringify({ opcao, dia: partesBrasilia(agora()).day }));
+        } catch (e) {}
+        renderizar();
+      }
+      
+      function horaParaData(hhmm) {
+        const [hora, minuto] = hhmm.split(':').map(Number);
+        return dataHojeBrasilia(hora, minuto);
+      }
+      
+      function textoTempo(minutos) {
+        return minutos < 60 ? `${minutos} min` : formatarDuracao(minutos);
+      }
+      
+      function renderizarJanelas(agoraMs) {
+        const card = document.getElementById('bathroomCard');
+        card.classList.toggle('hidden', !opcaoJanelas);
+        if (!opcaoJanelas) return;
+        
+        const corpo = document.getElementById('bathroomBody');
+        const janelas = OPCOES_JANELAS[opcaoJanelas];
+        if (janelas.length === 0) {
+          corpo.innerHTML = '<div class="sem-saida">Não são permitidas saídas da sala antes da conclusão do exame.</div>';
+          return;
+        }
+        corpo.innerHTML = janelas.map(janela => {
+          const ini = horaParaData(janela.inicio);
+          const fim = horaParaData(janela.fim);
+          let classe = '';
+          let status = '';
+          if (agoraMs >= fim.getTime()) {
+            classe = 'encerrada';
+            status = 'encerrada';
+          } else if (agoraMs >= ini.getTime()) {
+            classe = 'aberta';
+            status = `liberada · faltam ${textoTempo(Math.ceil((fim.getTime() - agoraMs) / 60000))}`;
+          } else {
+            status = `em ${textoTempo(Math.ceil((ini.getTime() - agoraMs) / 60000))}`;
+          }
+          return `<div class="janela-row ${classe}">
+                <span class="janela-nome">${janela.nome}</span>
+                <span class="janela-horario">${formatarHora(ini)} às ${formatarHora(fim)}</span>
+                <span class="janela-status">${status}</span>
+              </div>`;
+        }).join('');
       }
       
       function salvarInicio(date) {
@@ -907,6 +1189,7 @@
         });
         document.getElementById('scheduleBody').innerHTML = linhas.join('');
         renderizarContagemInicio(agoraMs);
+        renderizarJanelas(agoraMs);
       }
       
       // Antes de clicar em "Iniciar prova", mostra quanto falta para o início previsto
@@ -934,6 +1217,16 @@
         document.getElementById('adjustForm').classList.add('hidden');
         document.body.classList.toggle('iniciado', iniciado);
         document.getElementById('subtitle').classList.toggle('previsto', !iniciado);
+        
+        // Seletor de janelas: antes de iniciar, ou ao clicar em "Trocar janelas"
+        document.getElementById('janelaPicker').classList.toggle('hidden', iniciado && !trocandoJanelas);
+        document.querySelectorAll('.janela-option').forEach(botao => {
+          const selecionado = botao.dataset.opcao === opcaoJanelas;
+          botao.classList.toggle('selected', selecionado);
+          botao.setAttribute('aria-checked', String(selecionado));
+        });
+        document.getElementById('janelaHint').classList.toggle('hidden', Boolean(opcaoJanelas));
+        document.getElementById('btnStart').disabled = !opcaoJanelas;
         
         if (iniciado) {
           document.getElementById('subtitle').textContent = `Prova iniciada às ${formatarHora(inicio)}`;
@@ -1001,6 +1294,17 @@
         
         document.addEventListener('fullscreenchange', function() {
           document.body.classList.toggle('tela-cheia', Boolean(document.fullscreenElement));
+        });
+        
+        document.querySelectorAll('.janela-option').forEach(botao => {
+          botao.addEventListener('click', function() {
+            salvarOpcaoJanelas(botao.dataset.opcao);
+          });
+        });
+        
+        document.getElementById('btnJanelas').addEventListener('click', function() {
+          trocandoJanelas = !trocandoJanelas;
+          renderizar();
         });
         
         document.getElementById('btnReset').addEventListener('click', function() {
