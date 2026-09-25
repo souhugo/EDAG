@@ -8,7 +8,7 @@ Abra o `index.html` no navegador. Não precisa de build: Tailwind, Font Awesome 
 
 ## Logos
 
-A página usa estes arquivos, que precisam ser adicionados na pasta `images/`:
+Os logos ficam na pasta `images/`:
 
 - `images/edag_logo_original.png`
 - `images/senai_cimatec_logo.png`
