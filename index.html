@@ -263,6 +263,113 @@
         background-color: rgba(32, 178, 170, 0.1);
       }
       
+      .start-area {
+        width: 100%;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e0e0e0;
+        text-align: center;
+      }
+      
+      .btn-start {
+        width: 100%;
+        background: #20B2AA;
+        color: white;
+        font-size: 20px;
+        font-weight: 700;
+        padding: 14px 20px;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(32, 178, 170, 0.35);
+        transition: background 0.2s ease, transform 0.2s ease;
+      }
+      
+      .btn-start:hover {
+        background: #1a9a93;
+        transform: translateY(-2px);
+      }
+      
+      .btn-start i {
+        margin-right: 8px;
+      }
+      
+      .start-info {
+        font-size: 18px;
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 12px;
+      }
+      
+      .start-info strong {
+        color: #20B2AA;
+      }
+      
+      .start-actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      
+      .btn-small {
+        background: #f0f0f0;
+        color: #333;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 8px 14px;
+        border: 1px solid #d0d0d0;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      
+      .btn-small:hover {
+        background: #e4e4e4;
+      }
+      
+      .adjust-form {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      
+      .adjust-form input {
+        font-size: 16px;
+        padding: 6px 10px;
+        border: 1px solid #d0d0d0;
+        border-radius: 8px;
+      }
+      
+      .hidden {
+        display: none !important;
+      }
+      
+      .status {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        margin-top: 2px;
+      }
+      
+      .status-running {
+        color: #1a9a93;
+      }
+      
+      .status-done {
+        color: #c0392b;
+      }
+      
+      .status-planned {
+        color: #888;
+        font-style: italic;
+      }
+      
+      tr.row-done td:not(:first-child) {
+        color: #999;
+      }
+      
       .footer {
         display: flex;
         justify-content: space-between;
@@ -348,7 +455,7 @@
         <img src="images/edag_logo_original.png" alt="Logo EDAG" class="logo-edag">
         <div class="title-container">
           <h1 class="title">Horário das Provas</h1>
-          <div class="subtitle">Início: 14h</div>
+          <div class="subtitle" id="subtitle">Início previsto: 14h</div>
         </div>
         <div style="width: 150px;"></div> <!-- Espaço para balancear o layout -->
       </div>
@@ -365,6 +472,23 @@
             <div class="date-display" id="dateDisplay"></div>
             <div class="time-display" id="timeDisplay">00:00:00</div>
             <div class="timezone-info">A hora certa é sincronizada automaticamente.</div>
+            
+            <div class="start-area">
+              <button type="button" class="btn-start" id="btnStart">
+                <i class="fas fa-play"></i>Iniciar prova
+              </button>
+              <div id="startedPanel" class="hidden">
+                <div class="start-info">Prova iniciada às <strong id="startLabel"></strong></div>
+                <div class="start-actions">
+                  <button type="button" class="btn-small" id="btnAdjust">Ajustar horário</button>
+                  <button type="button" class="btn-small" id="btnReset">Reiniciar</button>
+                </div>
+                <form class="adjust-form hidden" id="adjustForm">
+                  <input type="time" id="adjustInput" required>
+                  <button type="submit" class="btn-small">Salvar</button>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -382,43 +506,7 @@
                   <th>Horário de Conclusão</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td>Tipo I</td>
-                  <td>1h30</td>
-                  <td>15h30</td>
-                </tr>
-                <tr>
-                  <td>Tipo II</td>
-                  <td>2h</td>
-                  <td>16h</td>
-                </tr>
-                <tr>
-                  <td>Tipo III</td>
-                  <td>2h30</td>
-                  <td>16h30</td>
-                </tr>
-                <tr>
-                  <td>Tipo IV</td>
-                  <td>3h</td>
-                  <td>17h</td>
-                </tr>
-                <tr>
-                  <td>Tipo V</td>
-                  <td>3h30</td>
-                  <td>17h30</td>
-                </tr>
-                <tr>
-                  <td>Tipo VI</td>
-                  <td>4h</td>
-                  <td>18h</td>
-                </tr>
-                <tr>
-                  <td>Tipo VII</td>
-                  <td>4h</td>
-                  <td>18h</td>
-                </tr>
-              </tbody>
+              <tbody id="scheduleBody"></tbody>
             </table>
           </div>
         </div>
@@ -433,6 +521,122 @@
     </div>
 
     <script>
+      const TIMEZONE = 'America/Sao_Paulo';
+      const STORAGE_KEY = 'edag-inicio-prova';
+      // Início usado antes de clicar em "Iniciar prova"
+      const INICIO_PREVISTO = { hora: 14, minuto: 0 };
+      
+      // Duração de cada tipo de prova, em minutos
+      const PROVAS = [
+        { tipo: 'Tipo I', duracao: 90 },
+        { tipo: 'Tipo II', duracao: 120 },
+        { tipo: 'Tipo III', duracao: 150 },
+        { tipo: 'Tipo IV', duracao: 180 },
+        { tipo: 'Tipo V', duracao: 210 },
+        { tipo: 'Tipo VI', duracao: 240 },
+        { tipo: 'Tipo VII', duracao: 240 }
+      ];
+      
+      let inicio = carregarInicio();
+      
+      // Retorna ano, mês, dia, hora e minuto de uma data no horário de Brasília
+      function partesBrasilia(date) {
+        const partes = {};
+        new Intl.DateTimeFormat('en-CA', {
+          timeZone: TIMEZONE,
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+        }).formatToParts(date).forEach(p => { partes[p.type] = p.value; });
+        return partes;
+      }
+      
+      // Cria uma data a partir de um horário (hh:mm) de hoje em Brasília (UTC-3)
+      function dataHojeBrasilia(hora, minuto) {
+        const p = partesBrasilia(new Date());
+        const hh = String(hora).padStart(2, '0');
+        const mm = String(minuto).padStart(2, '0');
+        return new Date(`${p.year}-${p.month}-${p.day}T${hh}:${mm}:00-03:00`);
+      }
+      
+      // Formata no padrão 15h30 / 16h
+      function formatarHora(date) {
+        const p = partesBrasilia(date);
+        const hora = String(Number(p.hour));
+        return p.minute === '00' ? `${hora}h` : `${hora}h${p.minute}`;
+      }
+      
+      function formatarDuracao(minutos) {
+        const h = Math.floor(minutos / 60);
+        const m = minutos % 60;
+        return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
+      }
+      
+      function carregarInicio() {
+        try {
+          const salvo = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          // Só vale se foi iniciado hoje
+          if (salvo && partesBrasilia(new Date(salvo)).day === partesBrasilia(new Date()).day
+              && Date.now() - salvo < 24 * 60 * 60 * 1000) {
+            return new Date(salvo);
+          }
+        } catch (e) {}
+        return null;
+      }
+      
+      function salvarInicio(date) {
+        inicio = date;
+        try {
+          if (date) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(date.getTime()));
+          } else {
+            localStorage.removeItem(STORAGE_KEY);
+          }
+        } catch (e) {}
+        renderizar();
+      }
+      
+      function renderizarTabela() {
+        const agora = Date.now();
+        const base = inicio || dataHojeBrasilia(INICIO_PREVISTO.hora, INICIO_PREVISTO.minuto);
+        const linhas = PROVAS.map(prova => {
+          const fim = new Date(base.getTime() + prova.duracao * 60000);
+          let status = '';
+          let classe = '';
+          if (!inicio) {
+            status = '<span class="status status-planned">previsto</span>';
+          } else if (agora >= fim.getTime()) {
+            status = '<span class="status status-done">encerrada</span>';
+            classe = 'row-done';
+          } else {
+            const faltam = Math.ceil((fim.getTime() - agora) / 60000);
+            const texto = faltam < 60 ? `${faltam} min` : formatarDuracao(faltam);
+            status = `<span class="status status-running">faltam ${texto}</span>`;
+          }
+          return `<tr class="${classe}">
+                  <td>${prova.tipo}</td>
+                  <td>${formatarDuracao(prova.duracao)}</td>
+                  <td>${formatarHora(fim)}${status}</td>
+                </tr>`;
+        });
+        document.getElementById('scheduleBody').innerHTML = linhas.join('');
+      }
+      
+      function renderizar() {
+        const iniciado = Boolean(inicio);
+        document.getElementById('btnStart').classList.toggle('hidden', iniciado);
+        document.getElementById('startedPanel').classList.toggle('hidden', !iniciado);
+        document.getElementById('adjustForm').classList.add('hidden');
+        
+        if (iniciado) {
+          document.getElementById('subtitle').textContent = `Início: ${formatarHora(inicio)}`;
+          document.getElementById('startLabel').textContent = formatarHora(inicio);
+        } else {
+          const previsto = dataHojeBrasilia(INICIO_PREVISTO.hora, INICIO_PREVISTO.minuto);
+          document.getElementById('subtitle').textContent = `Início previsto: ${formatarHora(previsto)}`;
+        }
+        renderizarTabela();
+      }
+      
       // Função para atualizar o relógio com horário de Brasília
       function updateClock() {
         const now = new Date();
@@ -443,14 +647,14 @@
           year: 'numeric', 
           month: 'long', 
           day: 'numeric',
-          timeZone: 'America/Sao_Paulo'
+          timeZone: TIMEZONE
         };
         const dateStr = now.toLocaleDateString('pt-BR', options);
         
         // Formatação do horário
         const timeStr = now.toLocaleTimeString('pt-BR', {
           hour12: false,
-          timeZone: 'America/Sao_Paulo'
+          timeZone: TIMEZONE
         });
         
         // Atualizar elementos
@@ -461,9 +665,36 @@
       // Executar quando a página carregar
       document.addEventListener('DOMContentLoaded', function() {
         updateClock();
+        renderizar();
         
         // Atualizar o relógio a cada segundo
         setInterval(updateClock, 1000);
+        // Atualizar o tempo restante das provas
+        setInterval(renderizarTabela, 15000);
+        
+        document.getElementById('btnStart').addEventListener('click', function() {
+          // Considera o minuto cheio em que a prova começou
+          const p = partesBrasilia(new Date());
+          salvarInicio(dataHojeBrasilia(Number(p.hour), Number(p.minute)));
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', function() {
+          if (confirm('Apagar o horário de início desta sala?')) {
+            salvarInicio(null);
+          }
+        });
+        
+        document.getElementById('btnAdjust').addEventListener('click', function() {
+          const p = partesBrasilia(inicio);
+          document.getElementById('adjustInput').value = `${p.hour}:${p.minute}`;
+          document.getElementById('adjustForm').classList.toggle('hidden');
+        });
+        
+        document.getElementById('adjustForm').addEventListener('submit', function(event) {
+          event.preventDefault();
+          const [hora, minuto] = document.getElementById('adjustInput').value.split(':').map(Number);
+          salvarInicio(dataHojeBrasilia(hora, minuto));
+        });
       });
     </script>
   </body>
