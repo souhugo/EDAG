@@ -33,15 +33,44 @@ function lerStatus(corpo) {
   return { id, sala: sala.trim(), inicio, opcao };
 }
 
+// /api/salas?diagnostico=1 mostra se o banco está configurado e respondendo,
+// sem revelar credenciais nem dados das salas
+async function diagnosticar() {
+  const resultado = {
+    banco: REDIS_URL && REDIS_TOKEN ? 'configurado' : 'faltando variáveis KV_REST_API_URL / KV_REST_API_TOKEN',
+    dia: chaveDoDia().split(':').pop()
+  };
+  if (REDIS_URL && REDIS_TOKEN) {
+    try {
+      resultado.conexao = (await redis(['PING'])) === 'PONG' ? 'ok' : 'resposta inesperada';
+      resultado.salasHoje = await redis(['HLEN', chaveDoDia()]);
+    } catch (e) {
+      resultado.conexao = `erro: ${e.message}`;
+    }
+  }
+  return resultado;
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+  if (req.method === 'GET' && req.query && req.query.diagnostico) {
+    return res.status(200).json(await diagnosticar());
+  }
   if (!REDIS_URL || !REDIS_TOKEN) {
     return res.status(500).json({ erro: 'Banco de dados não configurado.' });
   }
 
   try {
     if (req.method === 'POST') {
-      const status = lerStatus(req.body);
+      let corpo = req.body;
+      if (typeof corpo === 'string') {
+        try {
+          corpo = JSON.parse(corpo);
+        } catch (e) {
+          corpo = null;
+        }
+      }
+      const status = lerStatus(corpo);
       if (!status) return res.status(400).json({ erro: 'Dados inválidos.' });
       const chave = chaveDoDia();
       const { id, ...dados } = status;
@@ -69,6 +98,6 @@ module.exports = async function handler(req, res) {
     res.setHeader('Allow', 'GET, POST');
     return res.status(405).json({ erro: 'Método não permitido.' });
   } catch (e) {
-    return res.status(502).json({ erro: 'Falha ao acessar o banco de dados.' });
+    return res.status(502).json({ erro: `Falha ao acessar o banco de dados: ${e.message}` });
   }
 };

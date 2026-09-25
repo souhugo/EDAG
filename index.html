@@ -359,6 +359,21 @@
         display: none !important;
       }
       
+      .painel-info {
+        font-size: 12px;
+        color: #888;
+        text-align: center;
+        margin-top: 4px;
+      }
+      
+      .painel-info.erro {
+        color: #c0392b;
+      }
+      
+      body.tela-cheia .painel-info {
+        display: none;
+      }
+      
       .sala-field {
         display: flex;
         align-items: center;
@@ -942,6 +957,7 @@
             <div class="date-display" id="dateDisplay"></div>
             <div class="time-display" id="timeDisplay">00:00:00</div>
             <div class="timezone-info" id="syncInfo">Sincronizando com a hora oficial...</div>
+            <div class="painel-info hidden" id="painelInfo"></div>
             
             <div class="start-area">
               <div class="sala-field" id="salaField">
@@ -1103,8 +1119,9 @@
       // Sem internet a página continua funcionando; o painel mostra "sem sinal".
       async function enviarStatus() {
         if (!sala) return;
+        const info = document.getElementById('painelInfo');
         try {
-          await fetch('/api/salas', {
+          const resposta = await fetch('/api/salas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1115,7 +1132,21 @@
             }),
             keepalive: true
           });
-        } catch (e) {}
+          if (!resposta.ok) {
+            let detalhe = `erro ${resposta.status}`;
+            try {
+              const dados = await resposta.json();
+              if (dados.erro) detalhe += `: ${dados.erro}`;
+            } catch (e) {}
+            throw new Error(detalhe);
+          }
+          info.textContent = `Painel da coordenação: atualizado às ${formatarHora(agora())}.`;
+          info.classList.remove('erro');
+        } catch (e) {
+          info.textContent = `Painel da coordenação: não foi possível enviar (${e.message}).`;
+          info.classList.add('erro');
+        }
+        info.classList.remove('hidden');
       }
       
       function enviarStatusEmBreve() {

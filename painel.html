@@ -403,7 +403,14 @@
             mostrarCodigo(Boolean(codigo));
             return;
           }
-          if (!resposta.ok) throw new Error(resposta.status);
+          if (!resposta.ok) {
+            let detalhe = `erro ${resposta.status}`;
+            try {
+              const dados = await resposta.json();
+              if (dados.erro) detalhe += `: ${dados.erro}`;
+            } catch (e) {}
+            throw new Error(detalhe);
+          }
           const dados = await resposta.json();
           salas = dados.salas || [];
           ultimaAtualizacao = agora();
@@ -411,7 +418,7 @@
           document.getElementById('codigoForm').classList.add('hidden');
           document.getElementById('conteudo').classList.remove('hidden');
         } catch (e) {
-          falhou = true;
+          falhou = e.message || 'sem conexão';
         }
         renderizar();
       }
@@ -569,8 +576,8 @@
         atualizado.classList.toggle('erro', falhou);
         if (falhou) {
           atualizado.textContent = ultimaAtualizacao
-            ? `Sem conexão · dados de ${horaCompleta(ultimaAtualizacao)}`
-            : 'Sem conexão com o servidor';
+            ? `Falha ao atualizar (${falhou}) · dados de ${horaCompleta(ultimaAtualizacao)}`
+            : `Falha ao carregar as salas (${falhou})`;
         } else if (ultimaAtualizacao) {
           atualizado.innerHTML = `Agora: <span class="clock">${horaCompleta(agora())}</span> · atualizado às ${horaCompleta(ultimaAtualizacao)}`;
         }
