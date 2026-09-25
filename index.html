@@ -936,7 +936,7 @@
         document.getElementById('subtitle').classList.toggle('previsto', !iniciado);
         
         if (iniciado) {
-          document.getElementById('subtitle').textContent = `Início: ${formatarHora(inicio)}`;
+          document.getElementById('subtitle').textContent = `Prova iniciada às ${formatarHora(inicio)}`;
         } else {
           const previsto = dataHojeBrasilia(INICIO_PREVISTO.hora, INICIO_PREVISTO.minuto);
           document.getElementById('subtitle').textContent = `Início previsto: ${formatarHora(previsto)}`;
