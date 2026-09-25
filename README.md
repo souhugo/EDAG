@@ -21,3 +21,7 @@ Antes do início, a tabela mostra os horários previstos para começar às 14h. 
 - **Reiniciar** apaga o início da sala.
 
 O horário fica salvo no navegador de cada computador, então cada sala funciona de forma independente e o início não se perde se a página for recarregada.
+
+## Hora oficial
+
+O relógio não depende da hora do computador: ao abrir a página, ela consulta a hora do servidor do site (que é sincronizado com a hora oficial) e corrige a diferença. A sincronização se repete a cada 10 minutos. Abaixo do relógio aparece se o computador está adiantado ou atrasado. Sem internet, a página usa o relógio do computador e avisa.

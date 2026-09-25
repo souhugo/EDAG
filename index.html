@@ -471,7 +471,7 @@
             <div class="clock-subtitle">Acerte seu relógio com o horário de Brasília, a hora oficial do Brasil</div>
             <div class="date-display" id="dateDisplay"></div>
             <div class="time-display" id="timeDisplay">00:00:00</div>
-            <div class="timezone-info">A hora certa é sincronizada automaticamente.</div>
+            <div class="timezone-info" id="syncInfo">Sincronizando com a hora oficial...</div>
             
             <div class="start-area">
               <button type="button" class="btn-start" id="btnStart">
@@ -537,6 +537,54 @@
         { tipo: 'Tipo VII', duracao: 240 }
       ];
       
+      // Diferença (ms) entre a hora oficial e o relógio deste computador
+      let ajusteRelogio = 0;
+      
+      function agora() {
+        return new Date(Date.now() + ajusteRelogio);
+      }
+      
+      function formatarDiferenca(segundos) {
+        const m = Math.floor(segundos / 60);
+        const seg = segundos % 60;
+        if (m === 0) return `${seg} s`;
+        return seg === 0 ? `${m} min` : `${m} min ${seg} s`;
+      }
+      
+      // Lê a hora do servidor (cabeçalho Date da resposta), que é sincronizado
+      // com a hora oficial. Faz 3 medições e usa a de resposta mais rápida.
+      async function sincronizarRelogio() {
+        let melhor = null;
+        for (let i = 0; i < 3; i++) {
+          try {
+            const envio = Date.now();
+            const resposta = await fetch(`${location.pathname}?sync=${envio}`, { method: 'HEAD', cache: 'no-store' });
+            const chegada = Date.now();
+            const dataServidor = Date.parse(resposta.headers.get('Date'));
+            if (Number.isNaN(dataServidor)) continue;
+            const ida = (chegada - envio) / 2;
+            // O cabeçalho tem precisão de segundos: soma meio segundo em média
+            const ajuste = dataServidor + 500 - (envio + ida);
+            if (!melhor || chegada - envio < melhor.duracao) {
+              melhor = { ajuste, duracao: chegada - envio };
+            }
+          } catch (e) {}
+        }
+        
+        const info = document.getElementById('syncInfo');
+        if (melhor) {
+          ajusteRelogio = melhor.ajuste;
+          const segundos = Math.round(ajusteRelogio / 1000);
+          info.textContent = Math.abs(segundos) < 2
+            ? 'Sincronizado com a hora oficial. O relógio deste computador está certo.'
+            : `Sincronizado com a hora oficial. O relógio deste computador está ${formatarDiferenca(Math.abs(segundos))} ${segundos > 0 ? 'atrasado' : 'adiantado'}.`;
+        } else if (ajusteRelogio === 0) {
+          info.textContent = 'Sem conexão: usando o relógio deste computador.';
+        }
+        updateClock();
+        renderizarTabela();
+      }
+      
       let inicio = carregarInicio();
       
       // Retorna ano, mês, dia, hora e minuto de uma data no horário de Brasília
@@ -552,7 +600,7 @@
       
       // Cria uma data a partir de um horário (hh:mm) de hoje em Brasília (UTC-3)
       function dataHojeBrasilia(hora, minuto) {
-        const p = partesBrasilia(new Date());
+        const p = partesBrasilia(agora());
         const hh = String(hora).padStart(2, '0');
         const mm = String(minuto).padStart(2, '0');
         return new Date(`${p.year}-${p.month}-${p.day}T${hh}:${mm}:00-03:00`);
@@ -575,8 +623,8 @@
         try {
           const salvo = JSON.parse(localStorage.getItem(STORAGE_KEY));
           // Só vale se foi iniciado hoje
-          if (salvo && partesBrasilia(new Date(salvo)).day === partesBrasilia(new Date()).day
-              && Date.now() - salvo < 24 * 60 * 60 * 1000) {
+          if (salvo && partesBrasilia(new Date(salvo)).day === partesBrasilia(agora()).day
+              && agora().getTime() - salvo < 24 * 60 * 60 * 1000) {
             return new Date(salvo);
           }
         } catch (e) {}
@@ -596,7 +644,7 @@
       }
       
       function renderizarTabela() {
-        const agora = Date.now();
+        const agoraMs = agora().getTime();
         const base = inicio || dataHojeBrasilia(INICIO_PREVISTO.hora, INICIO_PREVISTO.minuto);
         const linhas = PROVAS.map(prova => {
           const fim = new Date(base.getTime() + prova.duracao * 60000);
@@ -604,11 +652,11 @@
           let classe = '';
           if (!inicio) {
             status = '<span class="status status-planned">previsto</span>';
-          } else if (agora >= fim.getTime()) {
+          } else if (agoraMs >= fim.getTime()) {
             status = '<span class="status status-done">encerrada</span>';
             classe = 'row-done';
           } else {
-            const faltam = Math.ceil((fim.getTime() - agora) / 60000);
+            const faltam = Math.ceil((fim.getTime() - agoraMs) / 60000);
             const texto = faltam < 60 ? `${faltam} min` : formatarDuracao(faltam);
             status = `<span class="status status-running">faltam ${texto}</span>`;
           }
@@ -639,7 +687,7 @@
       
       // Função para atualizar o relógio com horário de Brasília
       function updateClock() {
-        const now = new Date();
+        const now = agora();
         
         // Formatação da data
         const options = { 
@@ -672,9 +720,13 @@
         // Atualizar o tempo restante das provas
         setInterval(renderizarTabela, 15000);
         
+        sincronizarRelogio();
+        // Ressincronizar a cada 10 minutos
+        setInterval(sincronizarRelogio, 10 * 60 * 1000);
+        
         document.getElementById('btnStart').addEventListener('click', function() {
           // Considera o minuto cheio em que a prova começou
-          const p = partesBrasilia(new Date());
+          const p = partesBrasilia(agora());
           salvarInicio(dataHojeBrasilia(Number(p.hour), Number(p.minute)));
         });
         
