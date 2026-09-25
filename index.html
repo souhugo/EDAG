@@ -381,7 +381,8 @@
         color: #333;
       }
       
-      .sala-field input {
+      .sala-field input,
+      .sala-field select {
         width: 130px;
         font-size: 18px;
         font-weight: 600;
@@ -391,13 +392,22 @@
         border-radius: 10px;
       }
       
-      .sala-field input:focus {
+      .sala-field input:focus,
+      .sala-field select:focus {
         outline: none;
         border-color: #20B2AA;
       }
       
+      .sala-field select {
+        width: 180px;
+      }
+      
       #adjustSala {
-        width: 90px;
+        width: 140px;
+        font-size: 15px;
+        padding: 6px 8px;
+        border: 1px solid #d0d0d0;
+        border-radius: 8px;
       }
       
       .janela-picker {
@@ -1015,32 +1025,9 @@
       </div>
     </div>
 
+    <script src="comum.js"></script>
     <script>
-      const TIMEZONE = 'America/Sao_Paulo';
       const STORAGE_KEY = 'edag-inicio-prova';
-      // Início usado antes de clicar em "Iniciar prova"
-      const INICIO_PREVISTO = { hora: 14, minuto: 0 };
-      
-      // Duração de cada tipo de prova, em minutos
-      const PROVAS = [
-        { tipo: 'Tipo I', duracao: 90 },
-        { tipo: 'Tipo II', duracao: 120 },
-        { tipo: 'Tipo III', duracao: 150 },
-        { tipo: 'Tipo IV', duracao: 180 },
-        { tipo: 'Tipo V', duracao: 210 },
-        { tipo: 'Tipo VI', duracao: 240 },
-        { tipo: 'Tipo VII', duracao: 240 }
-      ];
-      
-      // Diferença (ms) entre a hora oficial e o relógio deste computador
-      let ajusteRelogio = 0;
-      // Minutos finais em que o tempo restante fica em destaque
-      const MINUTOS_AVISO = 15;
-      
-      function agora() {
-        return new Date(Date.now() + ajusteRelogio);
-      }
-      
       function formatarDiferenca(segundos) {
         const m = Math.floor(segundos / 60);
         const seg = segundos % 60;
@@ -1048,25 +1035,9 @@
         return seg === 0 ? `${m} min` : `${m} min ${seg} s`;
       }
       
-      // Lê a hora do servidor (cabeçalho Date da resposta), que é sincronizado
-      // com a hora oficial. Faz 3 medições e usa a de resposta mais rápida.
       async function sincronizarRelogio() {
-        let melhor = null;
-        for (let i = 0; i < 3; i++) {
-          try {
-            const envio = Date.now();
-            const resposta = await fetch(`${location.pathname}?sync=${envio}`, { method: 'HEAD', cache: 'no-store' });
-            const chegada = Date.now();
-            const dataServidor = Date.parse(resposta.headers.get('Date'));
-            if (Number.isNaN(dataServidor)) continue;
-            const ida = (chegada - envio) / 2;
-            // O cabeçalho tem precisão de segundos: soma meio segundo em média
-            const ajuste = dataServidor + 500 - (envio + ida);
-            if (!melhor || chegada - envio < melhor.duracao) {
-              melhor = { ajuste, duracao: chegada - envio };
-            }
-          } catch (e) {}
-        }
+        const medido = await medirAjusteRelogio();
+        const melhor = medido === null ? null : { ajuste: medido };
         
         const info = document.getElementById('syncInfo');
         if (melhor) {
@@ -1082,18 +1053,6 @@
         renderizarTabela();
       }
       
-      // Janelas de saída para o banheiro (horários fixos)
-      const OPCOES_JANELAS = {
-        opcao1: [
-          { nome: 'Janela 1', inicio: '15:30', fim: '16:00' },
-          { nome: 'Janela 2', inicio: '16:30', fim: '17:00' }
-        ],
-        opcao2: [
-          { nome: 'Janela 1', inicio: '16:00', fim: '16:30' },
-          { nome: 'Janela 2', inicio: '17:00', fim: '17:30' }
-        ],
-        'sem-saida': []
-      };
       const STORAGE_JANELAS = 'edag-janelas-sala';
       
       let inicio = carregarInicio();
@@ -1101,39 +1060,11 @@
       // Mostra o seletor de janelas depois de iniciar (botão "Trocar janelas")
       let trocandoJanelas = false;
       const STORAGE_SALA = 'edag-sala';
+      const STORAGE_DISPOSITIVO = 'edag-dispositivo';
+      // Identifica este computador no painel, mesmo se a sala for trocada
+      const dispositivo = carregarDispositivo();
+      let temporizadorEnvio = null;
       let sala = carregarSala();
-      
-      // Retorna ano, mês, dia, hora e minuto de uma data no horário de Brasília
-      function partesBrasilia(date) {
-        const partes = {};
-        new Intl.DateTimeFormat('en-CA', {
-          timeZone: TIMEZONE,
-          year: 'numeric', month: '2-digit', day: '2-digit',
-          hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
-        }).formatToParts(date).forEach(p => { partes[p.type] = p.value; });
-        return partes;
-      }
-      
-      // Cria uma data a partir de um horário (hh:mm) de hoje em Brasília (UTC-3)
-      function dataHojeBrasilia(hora, minuto) {
-        const p = partesBrasilia(agora());
-        const hh = String(hora).padStart(2, '0');
-        const mm = String(minuto).padStart(2, '0');
-        return new Date(`${p.year}-${p.month}-${p.day}T${hh}:${mm}:00-03:00`);
-      }
-      
-      // Formata no padrão 15h30 / 16h
-      function formatarHora(date) {
-        const p = partesBrasilia(date);
-        const hora = String(Number(p.hour));
-        return p.minute === '00' ? `${hora}h` : `${hora}h${p.minute}`;
-      }
-      
-      function formatarDuracao(minutos) {
-        const h = Math.floor(minutos / 60);
-        const m = minutos % 60;
-        return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
-      }
       
       function carregarInicio() {
         try {
@@ -1164,7 +1095,67 @@
         try {
           localStorage.setItem(STORAGE_JANELAS, JSON.stringify({ opcao, dia: partesBrasilia(agora()).day }));
         } catch (e) {}
+        enviarStatusEmBreve();
         renderizar();
+      }
+      
+      function carregarDispositivo() {
+        try {
+          let id = localStorage.getItem(STORAGE_DISPOSITIVO);
+          if (!id) {
+            id = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+            localStorage.setItem(STORAGE_DISPOSITIVO, id);
+          }
+          return id;
+        } catch (e) {
+          return 'tmp' + Math.random().toString(36).slice(2, 10);
+        }
+      }
+      
+      // Envia a situação da sala para o painel da coordenação.
+      // Sem internet a página continua funcionando; o painel mostra "sem sinal".
+      async function enviarStatus() {
+        if (!sala) return;
+        try {
+          await fetch('/api/salas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: dispositivo,
+              sala,
+              inicio: inicio ? inicio.getTime() : null,
+              opcao: opcaoJanelas
+            }),
+            keepalive: true
+          });
+        } catch (e) {}
+      }
+      
+      function enviarStatusEmBreve() {
+        clearTimeout(temporizadorEnvio);
+        temporizadorEnvio = setTimeout(enviarStatus, 800);
+      }
+      
+      // Com a lista SALAS preenchida, troca o campo de texto por uma lista suspensa
+      function montarCampoSala(id) {
+        const campo = document.getElementById(id);
+        if (SALAS.length === 0) return;
+        const lista = document.createElement('select');
+        lista.id = campo.id;
+        lista.required = campo.required;
+        lista.setAttribute('aria-label', 'Sala');
+        // Agrupa por prédio: "CIM4-1-01" fica em "CIM4"
+        const grupos = new Map();
+        SALAS.forEach(nome => {
+          const predio = nome.split('-')[0];
+          if (!grupos.has(predio)) grupos.set(predio, []);
+          grupos.get(predio).push(nome);
+        });
+        lista.innerHTML = '<option value="">Selecione</option>' +
+          [...grupos].map(([predio, nomes]) => `<optgroup label="${predio}">` +
+            nomes.map(nome => `<option value="${nome}">${rotuloSala(nome)}</option>`).join('') +
+            '</optgroup>').join('');
+        campo.replaceWith(lista);
       }
       
       function carregarSala() {
@@ -1182,27 +1173,7 @@
         try {
           localStorage.setItem(STORAGE_SALA, JSON.stringify({ nome: sala, dia: partesBrasilia(agora()).day }));
         } catch (e) {}
-      }
-      
-      // "12" vira "Sala 12"; "Sala 12" ou "Lab 3" ficam como estão
-      function rotuloSala() {
-        if (!sala) return '';
-        return /^\d/.test(sala) ? `Sala ${sala}` : sala;
-      }
-      
-      function horaParaData(hhmm) {
-        const [hora, minuto] = hhmm.split(':').map(Number);
-        return dataHojeBrasilia(hora, minuto);
-      }
-      
-      function textoTempo(minutos) {
-        return minutos < 60 ? `${minutos} min` : formatarDuracao(minutos);
-      }
-      
-      // "falta 1 min", "falta 1h", "falta 1h29" (concorda com "uma hora"), "faltam 45 min", "faltam 2h"
-      function textoFalta(minutos) {
-        const singular = minutos === 1 || (minutos >= 60 && minutos < 120);
-        return `${singular ? 'falta' : 'faltam'} ${textoTempo(minutos)}`;
+        enviarStatusEmBreve();
       }
       
       function renderizarJanelas(agoraMs) {
@@ -1247,6 +1218,7 @@
             localStorage.removeItem(STORAGE_KEY);
           }
         } catch (e) {}
+        enviarStatusEmBreve();
         renderizar();
       }
       
@@ -1331,7 +1303,7 @@
         hint.classList.toggle('hidden', pendencias.length === 0);
         document.getElementById('btnStart').disabled = pendencias.length > 0;
         
-        const prefixo = sala ? `${rotuloSala()} · ` : '';
+        const prefixo = sala ? `${rotuloSala(sala)} · ` : '';
         if (iniciado) {
           document.getElementById('subtitle').textContent = `${prefixo}Prova iniciada às ${formatarHora(inicio)}`;
         } else {
@@ -1377,6 +1349,12 @@
         updateClock();
         renderizar();
         document.getElementById('currentYear').textContent = partesBrasilia(agora()).year;
+        montarCampoSala('salaInput');
+        montarCampoSala('adjustSala');
+        renderizar();
+        enviarStatus();
+        // Sinal de vida para o painel a cada minuto
+        setInterval(enviarStatus, 60 * 1000);
         
         // Atualizar o relógio a cada segundo
         setInterval(updateClock, 1000);

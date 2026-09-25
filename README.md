@@ -15,7 +15,7 @@ Os logos ficam na pasta `images/`:
 
 ## Início da prova em cada sala
 
-Antes de iniciar, informe a **sala** (por exemplo, `12`). Ela aparece no balão abaixo do título ("Sala 12 · Prova iniciada às 14h") e pode ser corrigida em **Ajustar sala e horário**.
+Antes de iniciar, escolha a **sala** na lista suspensa (as salas ficam na constante `SALAS` do `comum.js`, agrupadas por prédio). Ela aparece no balão abaixo do título ("CIM4-1-01 · Prova iniciada às 14h") e pode ser corrigida em **Ajustar sala e horário**.
 
 Antes do início, a tabela mostra os horários previstos para começar às 14h e o título mostra quanto falta para as 14h (depois disso, "Aguardando o início da prova"). Quando a prova começar na sala, clique em **Iniciar prova**: os horários de conclusão passam a ser calculados a partir desse minuto e cada linha mostra quanto tempo falta.
 
@@ -39,4 +39,21 @@ Antes de iniciar, escolha no quadro do relógio a opção de janelas da sala. As
 - **Opção 2:** Janela 1 das 16h às 16h30 e Janela 2 das 17h às 17h30.
 - **Sem saída:** para salas só com provas do Tipo I. Não são permitidas saídas antes da conclusão do exame.
 
-Os horários são fixos, não mudam se a prova começar atrasada. O quadro mostra quanto falta para cada janela; a janela liberada fica verde e as encerradas ficam cinza. Para trocar a opção depois de iniciar, saia da tela cheia (Esc) e use **Trocar janelas**. Os horários ficam na constante `OPCOES_JANELAS` do `index.html`.
+Os horários são fixos, não mudam se a prova começar atrasada. O quadro mostra quanto falta para cada janela; a janela liberada fica verde e as encerradas ficam cinza. Para trocar a opção depois de iniciar, saia da tela cheia (Esc) e use **Trocar janelas**. Os horários ficam na constante `OPCOES_JANELAS` do `comum.js`.
+
+## Painel das salas
+
+O endereço `/painel` mostra a situação de todas as salas, atualizada a cada 20 segundos: se a sala já iniciou (e com quanto atraso), a próxima prova a encerrar, as janelas de banheiro e se o computador da sala está conectado. O botão **Precisam de atenção** mostra só as salas não iniciadas depois das 14h05, sem sinal há mais de 3 minutos, não conectadas ou com dois computadores.
+
+Cada página de sala envia a situação para `/api/salas` quando o aplicador inicia, ajusta ou troca as janelas, e manda um sinal a cada minuto. Sem internet, a página da sala continua funcionando normalmente.
+
+Os dados ficam no Upstash Redis conectado ao projeto na Vercel (variáveis `KV_REST_API_URL` e `KV_REST_API_TOKEN`), numa chave por dia que expira em 2 dias.
+
+Para exigir um código de acesso no painel, crie na Vercel a variável de ambiente `PAINEL_CODIGO` com o código desejado e publique de novo.
+
+## Arquivos
+
+- `index.html`: página da sala.
+- `painel.html`: painel da coordenação.
+- `comum.js`: durações das provas, janelas de banheiro, lista de salas e funções de horário usadas pelas duas páginas.
+- `api/salas.js`: função da Vercel que grava e lê a situação das salas.
