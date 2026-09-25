@@ -1,4 +1,4 @@
-# Horário das Provas – EDAG & SENAI CIMATEC
+# Acompanhamento da Prova – EDAG & SENAI CIMATEC
 
 Página estática com o relógio no horário de Brasília e o cronograma de provas do EDAG (início às 14h).
 
@@ -15,10 +15,12 @@ Os logos ficam na pasta `images/`:
 
 ## Início da prova em cada sala
 
+Antes de iniciar, informe a **sala** (por exemplo, `12`). Ela aparece no balão abaixo do título ("Sala 12 · Prova iniciada às 14h") e pode ser corrigida em **Ajustar sala e horário**.
+
 Antes do início, a tabela mostra os horários previstos para começar às 14h e o título mostra quanto falta para as 14h (depois disso, "Aguardando o início da prova"). Quando a prova começar na sala, clique em **Iniciar prova**: os horários de conclusão passam a ser calculados a partir desse minuto e cada linha mostra quanto tempo falta.
 
 - A próxima prova a encerrar fica realçada. Nos últimos 15 minutos o tempo restante fica laranja e, ao terminar, a linha fica cinza com "encerrada".
-- **Ajustar horário** corrige o início, caso o botão tenha sido clicado atrasado.
+- **Ajustar sala e horário** corrige a sala e o início, caso o botão tenha sido clicado atrasado.
 - **Reiniciar** apaga o início da sala.
 
 Ao clicar em **Iniciar prova**, a página entra em tela cheia com tudo ajustado ao tamanho da tela, sem cortes nem rolagem. Os botões de ajuste ficam ocultos na tela cheia: aperte **Esc** para sair e **Tela cheia** para voltar.

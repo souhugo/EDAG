@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horário das Provas - EDAG & SENAI CIMATEC</title>
+    <title>Acompanhamento da Prova - EDAG & SENAI CIMATEC</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono&display=swap" rel="stylesheet">
@@ -367,6 +367,39 @@
         display: none !important;
       }
       
+      .sala-field {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      
+      .sala-field label {
+        font-size: 15px;
+        font-weight: 600;
+        color: #333;
+      }
+      
+      .sala-field input {
+        width: 130px;
+        font-size: 18px;
+        font-weight: 600;
+        text-align: center;
+        padding: 6px 10px;
+        border: 2px solid #d0d0d0;
+        border-radius: 10px;
+      }
+      
+      .sala-field input:focus {
+        outline: none;
+        border-color: #20B2AA;
+      }
+      
+      #adjustSala {
+        width: 90px;
+      }
+      
       .janela-picker {
         margin-bottom: 16px;
       }
@@ -709,7 +742,8 @@
         }
         
         body.tela-cheia .title {
-          font-size: min(6vh, 4vw);
+          font-size: min(6vh, 3.2vw);
+          white-space: nowrap;
         }
         
         body.tela-cheia .countdown-info {
@@ -839,6 +873,7 @@
         
         /* Os botões de ajuste ficam fora da tela cheia (tecla Esc para sair) */
         body.tela-cheia .start-actions,
+        body.tela-cheia .sala-field,
         body.tela-cheia .janela-picker,
         body.tela-cheia .adjust-form {
           display: none !important;
@@ -867,6 +902,11 @@
           font-size: 0.85em;
         }
         
+        body.tela-cheia td:first-child,
+        body.tela-cheia td:last-child {
+          white-space: nowrap;
+        }
+        
         body.tela-cheia .footer {
           margin-top: 1vh;
         }
@@ -884,7 +924,7 @@
           <img src="images/senai_cimatec_logo.png" alt="Logo SENAI CIMATEC">
         </div>
         <div class="title-container">
-          <h1 class="title">Horário das Provas</h1>
+          <h1 class="title">Acompanhamento da Prova</h1>
           <div class="subtitle" id="subtitle">Início previsto: 14h</div>
           <div class="countdown-info hidden" id="countdownInfo"></div>
         </div>
@@ -907,6 +947,10 @@
             <div class="timezone-info" id="syncInfo">Sincronizando com a hora oficial...</div>
             
             <div class="start-area">
+              <div class="sala-field" id="salaField">
+                <label for="salaInput">Sala</label>
+                <input type="text" id="salaInput" maxlength="20" placeholder="Ex.: 12" autocomplete="off">
+              </div>
               <div class="janela-picker" id="janelaPicker">
                 <div class="janela-picker-title">Janelas de banheiro desta sala</div>
                 <div class="janela-options" role="radiogroup" aria-label="Janelas de banheiro">
@@ -914,7 +958,7 @@
                   <button type="button" class="janela-option" data-opcao="opcao2" role="radio">Opção 2</button>
                   <button type="button" class="janela-option" data-opcao="sem-saida" role="radio">Sem saída<small>(só Tipo I)</small></button>
                 </div>
-                <div class="janela-hint" id="janelaHint">Escolha uma opção para iniciar a prova.</div>
+                <div class="janela-hint" id="janelaHint"></div>
               </div>
               <button type="button" class="btn-start" id="btnStart" disabled>
                 <i class="fas fa-play"></i>Iniciar prova
@@ -922,11 +966,12 @@
               <div id="startedPanel" class="hidden">
                 <div class="start-actions">
                   <button type="button" class="btn-small" id="btnFullscreen">Tela cheia</button>
-                  <button type="button" class="btn-small" id="btnAdjust">Ajustar horário</button>
+                  <button type="button" class="btn-small" id="btnAdjust">Ajustar sala e horário</button>
                   <button type="button" class="btn-small" id="btnJanelas">Trocar janelas</button>
                   <button type="button" class="btn-small" id="btnReset">Reiniciar</button>
                 </div>
                 <form class="adjust-form hidden" id="adjustForm">
+                  <input type="text" id="adjustSala" maxlength="20" placeholder="Sala" aria-label="Sala" required>
                   <input type="time" id="adjustInput" required>
                   <button type="submit" class="btn-small">Salvar</button>
                 </form>
@@ -1055,6 +1100,8 @@
       let opcaoJanelas = carregarOpcaoJanelas();
       // Mostra o seletor de janelas depois de iniciar (botão "Trocar janelas")
       let trocandoJanelas = false;
+      const STORAGE_SALA = 'edag-sala';
+      let sala = carregarSala();
       
       // Retorna ano, mês, dia, hora e minuto de uma data no horário de Brasília
       function partesBrasilia(date) {
@@ -1118,6 +1165,29 @@
           localStorage.setItem(STORAGE_JANELAS, JSON.stringify({ opcao, dia: partesBrasilia(agora()).day }));
         } catch (e) {}
         renderizar();
+      }
+      
+      function carregarSala() {
+        try {
+          const salvo = JSON.parse(localStorage.getItem(STORAGE_SALA));
+          if (salvo && salvo.nome && salvo.dia === partesBrasilia(agora()).day) {
+            return salvo.nome;
+          }
+        } catch (e) {}
+        return '';
+      }
+      
+      function salvarSala(nome) {
+        sala = nome.trim();
+        try {
+          localStorage.setItem(STORAGE_SALA, JSON.stringify({ nome: sala, dia: partesBrasilia(agora()).day }));
+        } catch (e) {}
+      }
+      
+      // "12" vira "Sala 12"; "Sala 12" ou "Lab 3" ficam como estão
+      function rotuloSala() {
+        if (!sala) return '';
+        return /^\d/.test(sala) ? `Sala ${sala}` : sala;
       }
       
       function horaParaData(hhmm) {
@@ -1249,14 +1319,24 @@
           botao.classList.toggle('selected', selecionado);
           botao.setAttribute('aria-checked', String(selecionado));
         });
-        document.getElementById('janelaHint').classList.toggle('hidden', Boolean(opcaoJanelas));
-        document.getElementById('btnStart').disabled = !opcaoJanelas;
+        // Para iniciar é preciso informar a sala e escolher as janelas
+        document.getElementById('salaField').classList.toggle('hidden', iniciado);
+        const salaInput = document.getElementById('salaInput');
+        if (document.activeElement !== salaInput) salaInput.value = sala;
+        const pendencias = [];
+        if (!sala) pendencias.push('informe a sala');
+        if (!opcaoJanelas) pendencias.push('escolha as janelas de banheiro');
+        const hint = document.getElementById('janelaHint');
+        hint.textContent = pendencias.length ? `Para iniciar, ${pendencias.join(' e ')}.` : '';
+        hint.classList.toggle('hidden', pendencias.length === 0);
+        document.getElementById('btnStart').disabled = pendencias.length > 0;
         
+        const prefixo = sala ? `${rotuloSala()} · ` : '';
         if (iniciado) {
-          document.getElementById('subtitle').textContent = `Prova iniciada às ${formatarHora(inicio)}`;
+          document.getElementById('subtitle').textContent = `${prefixo}Prova iniciada às ${formatarHora(inicio)}`;
         } else {
           const previsto = dataHojeBrasilia(INICIO_PREVISTO.hora, INICIO_PREVISTO.minuto);
-          document.getElementById('subtitle').textContent = `Início previsto: ${formatarHora(previsto)}`;
+          document.getElementById('subtitle').textContent = `${prefixo}Início previsto: ${formatarHora(previsto)}`;
         }
         renderizarTabela();
       }
@@ -1326,6 +1406,11 @@
           });
         });
         
+        document.getElementById('salaInput').addEventListener('input', function(event) {
+          salvarSala(event.target.value);
+          renderizar();
+        });
+        
         document.getElementById('btnJanelas').addEventListener('click', function() {
           trocandoJanelas = !trocandoJanelas;
           renderizar();
@@ -1340,12 +1425,14 @@
         document.getElementById('btnAdjust').addEventListener('click', function() {
           const p = partesBrasilia(inicio);
           document.getElementById('adjustInput').value = `${p.hour}:${p.minute}`;
+          document.getElementById('adjustSala').value = sala;
           document.getElementById('adjustForm').classList.toggle('hidden');
         });
         
         document.getElementById('adjustForm').addEventListener('submit', function(event) {
           event.preventDefault();
           const [hora, minuto] = document.getElementById('adjustInput').value.split(':').map(Number);
+          salvarSala(document.getElementById('adjustSala').value);
           salvarInicio(dataHojeBrasilia(hora, minuto));
         });
       });
