@@ -86,11 +86,24 @@
         border-radius: 2px;
       }
       
+      /* Horário de início em destaque: verde-água escuro depois de iniciar */
       .subtitle {
+        width: fit-content;
+        margin: 22px auto 0;
+        padding: 6px 22px;
+        border-radius: 999px;
+        background: #0B6B66;
+        color: #ffffff;
         font-size: 24px;
-        font-weight: 500;
-        color: #20B2AA;
-        margin-top: 15px;
+        font-weight: 700;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+      }
+      
+      /* Antes de iniciar: balão branco, para diferenciar do início real */
+      .subtitle.previsto {
+        background: #ffffff;
+        color: #0B6B66;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
       }
       
       .content {
@@ -311,17 +324,6 @@
         margin-right: 8px;
       }
       
-      .start-info {
-        font-size: 18px;
-        font-weight: 500;
-        color: #333;
-        margin-bottom: 12px;
-      }
-      
-      .start-info strong {
-        color: #20B2AA;
-      }
-      
       .start-actions {
         display: flex;
         justify-content: center;
@@ -413,8 +415,9 @@
       }
       
       .countdown-info {
-        display: inline-block;
-        margin-top: 10px;
+        display: block;
+        width: fit-content;
+        margin: 10px auto 0;
         padding: 6px 16px;
         background: rgba(255, 255, 255, 0.85);
         border-radius: 999px;
@@ -555,8 +558,8 @@
         
         body.tela-cheia .subtitle {
           font-size: min(4vh, 2.6vw);
-          font-weight: 700;
-          margin-top: 1.5vh;
+          margin-top: 2vh;
+          padding: 0.6vh 1.6vw;
         }
         
         body.tela-cheia .content {
@@ -627,9 +630,9 @@
           padding-top: 1.5vh;
         }
         
-        body.tela-cheia .start-info {
-          font-size: min(3.2vh, 2vw);
-          margin-bottom: 0;
+        /* Depois de iniciar, a área do botão não tem nada a mostrar na tela cheia */
+        body.tela-cheia.iniciado .start-area {
+          display: none;
         }
         
         /* Os botões de ajuste ficam fora da tela cheia (tecla Esc para sair) */
@@ -705,7 +708,6 @@
                 <i class="fas fa-play"></i>Iniciar prova
               </button>
               <div id="startedPanel" class="hidden">
-                <div class="start-info">Prova iniciada às <strong id="startLabel"></strong></div>
                 <div class="start-actions">
                   <button type="button" class="btn-small" id="btnFullscreen">Tela cheia</button>
                   <button type="button" class="btn-small" id="btnAdjust">Ajustar horário</button>
@@ -930,10 +932,11 @@
         document.getElementById('btnStart').classList.toggle('hidden', iniciado);
         document.getElementById('startedPanel').classList.toggle('hidden', !iniciado);
         document.getElementById('adjustForm').classList.add('hidden');
+        document.body.classList.toggle('iniciado', iniciado);
+        document.getElementById('subtitle').classList.toggle('previsto', !iniciado);
         
         if (iniciado) {
           document.getElementById('subtitle').textContent = `Início: ${formatarHora(inicio)}`;
-          document.getElementById('startLabel').textContent = formatarHora(inicio);
         } else {
           const previsto = dataHojeBrasilia(INICIO_PREVISTO.hora, INICIO_PREVISTO.minuto);
           document.getElementById('subtitle').textContent = `Início previsto: ${formatarHora(previsto)}`;
