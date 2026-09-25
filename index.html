@@ -370,6 +370,48 @@
         color: #999;
       }
       
+      tr.row-done td:first-child {
+        background: #9aa5a4 !important;
+      }
+      
+      .status-warning {
+        color: #d35400;
+        font-weight: 700;
+      }
+      
+      /* Próxima prova a encerrar */
+      tr.row-next td:not(:first-child) {
+        background-color: rgba(32, 178, 170, 0.18);
+        font-weight: 700;
+      }
+      
+      tr.row-next td:first-child {
+        box-shadow: inset 6px 0 0 #0d7a74;
+      }
+      
+      tr.row-next.row-warning td:not(:first-child) {
+        background-color: rgba(230, 126, 34, 0.18);
+      }
+      
+      tr.row-next.row-warning td:first-child {
+        box-shadow: inset 6px 0 0 #d35400;
+      }
+      
+      .countdown-info {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 6px 16px;
+        background: rgba(255, 255, 255, 0.85);
+        border-radius: 999px;
+        font-size: 18px;
+        font-weight: 500;
+        color: #333;
+      }
+      
+      .countdown-info strong {
+        color: #d35400;
+      }
+      
       .footer {
         display: flex;
         justify-content: space-between;
@@ -482,6 +524,11 @@
         
         body.tela-cheia .title {
           font-size: min(6vh, 4vw);
+        }
+        
+        body.tela-cheia .countdown-info {
+          font-size: min(2.6vh, 1.6vw);
+          margin-top: 1vh;
         }
         
         body.tela-cheia .title::after {
@@ -628,6 +675,7 @@
         <div class="title-container">
           <h1 class="title">Horário das Provas</h1>
           <div class="subtitle" id="subtitle">Início previsto: 14h</div>
+          <div class="countdown-info hidden" id="countdownInfo"></div>
         </div>
         <div style="width: 150px;"></div> <!-- Espaço para balancear o layout -->
       </div>
@@ -689,7 +737,7 @@
         <div class="logo-senai-box">
           <img src="images/senai_cimatec_logo.png" alt="Logo SENAI CIMATEC" class="logo-senai">
         </div>
-        <div class="copyright">© 2025 EDAG & SENAI CIMATEC</div>
+        <div class="copyright">© <span id="currentYear">2025</span> EDAG & SENAI CIMATEC</div>
       </div>
     </div>
 
@@ -712,6 +760,8 @@
       
       // Diferença (ms) entre a hora oficial e o relógio deste computador
       let ajusteRelogio = 0;
+      // Minutos finais em que o tempo restante fica em destaque
+      const MINUTOS_AVISO = 15;
       
       function agora() {
         return new Date(Date.now() + ajusteRelogio);
@@ -749,7 +799,7 @@
           ajusteRelogio = melhor.ajuste;
           const segundos = Math.round(ajusteRelogio / 1000);
           info.textContent = Math.abs(segundos) < 2
-            ? 'Sincronizado com a hora oficial. O relógio deste computador está certo.'
+            ? 'Sincronizado com a hora oficial.'
             : `Sincronizado com a hora oficial. O relógio deste computador está ${formatarDiferenca(Math.abs(segundos))} ${segundos > 0 ? 'atrasado' : 'adiantado'}.`;
         } else if (ajusteRelogio === 0) {
           info.textContent = 'Sem conexão: usando o relógio deste computador.';
@@ -819,27 +869,54 @@
       function renderizarTabela() {
         const agoraMs = agora().getTime();
         const base = inicio || dataHojeBrasilia(INICIO_PREVISTO.hora, INICIO_PREVISTO.minuto);
+        // A próxima prova a encerrar é a de menor duração ainda em andamento
+        const proxima = inicio
+          ? PROVAS.find(prova => base.getTime() + prova.duracao * 60000 > agoraMs)
+          : null;
         const linhas = PROVAS.map(prova => {
           const fim = new Date(base.getTime() + prova.duracao * 60000);
           let status = '';
-          let classe = '';
+          const classes = [];
           if (!inicio) {
             status = '<span class="status status-planned">previsto</span>';
           } else if (agoraMs >= fim.getTime()) {
             status = '<span class="status status-done">encerrada</span>';
-            classe = 'row-done';
+            classes.push('row-done');
           } else {
             const faltam = Math.ceil((fim.getTime() - agoraMs) / 60000);
             const texto = faltam < 60 ? `${faltam} min` : formatarDuracao(faltam);
-            status = `<span class="status status-running">faltam ${texto}</span>`;
+            // Nos últimos 15 minutos o aviso fica laranja
+            const aviso = faltam <= MINUTOS_AVISO;
+            if (aviso) classes.push('row-warning');
+            if (prova.duracao === proxima.duracao) classes.push('row-next');
+            status = `<span class="status ${aviso ? 'status-warning' : 'status-running'}">faltam ${texto}</span>`;
           }
-          return `<tr class="${classe}">
+          return `<tr class="${classes.join(' ')}">
                   <td>${prova.tipo}</td>
                   <td>${formatarDuracao(prova.duracao)}</td>
                   <td>${formatarHora(fim)}${status}</td>
                 </tr>`;
         });
         document.getElementById('scheduleBody').innerHTML = linhas.join('');
+        renderizarContagemInicio(agoraMs);
+      }
+      
+      // Antes de clicar em "Iniciar prova", mostra quanto falta para o início previsto
+      function renderizarContagemInicio(agoraMs) {
+        const info = document.getElementById('countdownInfo');
+        if (inicio) {
+          info.classList.add('hidden');
+          return;
+        }
+        const previsto = dataHojeBrasilia(INICIO_PREVISTO.hora, INICIO_PREVISTO.minuto).getTime();
+        const faltam = Math.ceil((previsto - agoraMs) / 60000);
+        if (faltam > 0) {
+          const texto = faltam < 60 ? `${faltam} min` : formatarDuracao(faltam);
+          info.innerHTML = `A prova começa em <strong>${texto}</strong>`;
+        } else {
+          info.textContent = 'Aguardando o início da prova';
+        }
+        info.classList.remove('hidden');
       }
       
       function renderizar() {
@@ -893,6 +970,7 @@
       document.addEventListener('DOMContentLoaded', function() {
         updateClock();
         renderizar();
+        document.getElementById('currentYear').textContent = partesBrasilia(agora()).year;
         
         // Atualizar o relógio a cada segundo
         setInterval(updateClock, 1000);
